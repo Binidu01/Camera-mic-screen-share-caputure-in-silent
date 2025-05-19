@@ -1,0 +1,9 @@
+flask
+flask-socketio
+eventlet
+opencv-python
+pyautogui
+numpy
+pyaudio
+requests
+python-dotenv

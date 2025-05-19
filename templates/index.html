@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Proctor Admin Panel</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; margin:0; }
+    header { background: #34495e; color: #fff; padding: 1rem; text-align: center; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap:1rem; padding:1rem; }
+    .panel { background: #fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); padding:1rem; }
+    img { width:100%; border-radius:4px; }
+    #locations { max-height:300px; overflow-y:auto; }
+    .loc { margin-bottom:1rem; display: flex; align-items: center; }
+    .loc-info { flex: 1; font-size:0.9rem; }
+    .map { width:200px; height:150px; border:0; border-radius:4px; }
+    button { padding:0.5rem 1rem; background:#2ecc71; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button:disabled { background:#95a5a6; }
+  </style>
+</head>
+<body>
+  <header><h1>Proctoring Dashboard</h1></header>
+  <main>
+    <div class="panel">
+      <h2>Webcam Feed</h2>
+      <img id="webcam" alt="Webcam stream">
+    </div>
+    <div class="panel">
+      <h2>Screen Share</h2>
+      <img id="screen" alt="Screen stream">
+    </div>
+    <div class="panel" style="grid-column: span 2;">
+      <h2>Live Audio</h2>
+      <p>Student microphone/system audio will play here.</p>
+    </div>
+    <div class="panel" style="grid-column: span 2;">
+      <h2>Client Locations</h2>
+      <div id="locations"></div>
+    </div>
+    <div class="panel" style="grid-column: span 2; text-align:center;">
+      <button id="saveAudio">Save &amp; Download Audio</button>
+    </div>
+  </main>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
+  <script>
+    const socket = io();
+
+    // Video & Screen
+    socket.on('video_frame', data => {
+      document.getElementById('webcam').src = 'data:image/jpeg;base64,' + data;
+    });
+    socket.on('screen_frame', data => {
+      document.getElementById('screen').src = 'data:image/jpeg;base64,' + data;
+    });
+
+    // Audio playback
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    socket.on('audio_data', b64 => {
+      const raw = atob(b64),
+            pcm = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) pcm[i] = raw.charCodeAt(i);
+      const wav = encodeWAV(pcm.buffer);
+      audioCtx.decodeAudioData(wav).then(buf => {
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(audioCtx.destination);
+        src.start();
+      });
+    });
+    function encodeWAV(samples) {
+      const buf = new ArrayBuffer(44 + samples.byteLength), dv = new DataView(buf);
+      function wstr(o,s){ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); }
+      wstr(0,'RIFF'); dv.setUint32(4,36+samples.byteLength,true);
+      wstr(8,'WAVE'); wstr(12,'fmt '); dv.setUint32(16,16,true);
+      dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+      dv.setUint32(24,44100,true); dv.setUint32(28,44100*2,true);
+      dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+      wstr(36,'data'); dv.setUint32(40,samples.byteLength,true);
+      new Uint8Array(buf,44).set(new Uint8Array(samples));
+      return buf;
+    }
+
+    // Client location with small Google Map
+    socket.on('client_location', loc => {
+      const container = document.getElementById('locations');
+      const div = document.createElement('div'),
+            info = document.createElement('div'),
+            iframe = document.createElement('iframe');
+
+      div.className = 'loc';
+      info.className = 'loc-info';
+      info.textContent = `[${loc.ip}] ${loc.city || ''} ${loc.region || ''} ${loc.country || ''}`.trim();
+
+      const query = (loc.latitude && loc.longitude)
+        ? `${loc.latitude},${loc.longitude}`
+        : loc.ip;
+
+      iframe.className = 'map';
+      iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=12&output=embed`;
+
+      div.appendChild(info);
+      div.appendChild(iframe);
+      container.appendChild(div);
+    });
+
+    // Save audio
+    document.getElementById('saveAudio').onclick = () => {
+      window.location = '/save_audio';
+    };
+  </script>
+
+</body>
+</html>
