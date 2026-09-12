@@ -1,7 +1,4 @@
 flask
-flask-socketio
-gevent
-gevent-websocket
-packaging
-requests
+flask-cors
+livekit-api
 gunicorn
