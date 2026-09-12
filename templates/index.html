@@ -2,112 +2,582 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Proctor Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proctoring Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; background: #f5f5f5; margin:0; }
-    header { background: #34495e; color: #fff; padding: 1rem; text-align: center; }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap:1rem; padding:1rem; }
-    .panel { background: #fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); padding:1rem; }
-    img { width:100%; border-radius:4px; }
-    #locations { max-height:300px; overflow-y:auto; }
-    .loc { margin-bottom:1rem; display: flex; align-items: center; }
-    .loc-info { flex: 1; font-size:0.9rem; }
-    .map { width:200px; height:150px; border:0; border-radius:4px; }
-    button { padding:0.5rem 1rem; background:#2ecc71; color:#fff; border:none; border-radius:4px; cursor:pointer; }
-    button:disabled { background:#95a5a6; }
+    :root {
+      --bg:          #0b0f17;
+      --surface:     #131a26;
+      --surface-2:   #1a2332;
+      --border:      #232e42;
+      --text:        #e6edf5;
+      --text-dim:    #8794ab;
+      --accent:      #4f8cff;
+      --accent-glow: rgba(79, 140, 255, 0.35);
+      --success:     #22c55e;
+      --danger:      #ef4444;
+      --radius:      14px;
+      --shadow:      0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 15, 23, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+
+    .brand-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #7c5cff);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 17px;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand small {
+      display: block;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      font-weight: 400;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: background 0.3s;
+    }
+    .dot.live {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    /* ── Layout ─────────────────────────────── */
+    main {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "cam       screen"
+        "locations locations";
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "cam"
+          "screen"
+          "locations";
+        padding: 1rem;
+      }
+    }
+
+    .area-locations { grid-area: locations; }
+    .area-cam       { grid-area: cam; }
+    .area-screen    { grid-area: screen; }
+
+    /* ── Panels ─────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.15rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .panel-title svg { width: 17px; height: 17px; color: var(--accent); }
+
+    .panel-body {
+      padding: 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    /* ── Video frames (equal size) ──────────── */
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #05080e;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .video-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #05080e;
+    }
+
+    .video-wrap .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .video-wrap .badge {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      padding: 0.25rem 0.6rem;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .video-wrap .badge .dot { width: 6px; height: 6px; }
+
+    /* ── Audio indicator (auto) ─────────────── */
+    .audio-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .audio-indicator.live { color: var(--success); }
+    .audio-indicator.blocked { color: var(--danger); }
+
+    .level-meter {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 18px;
+    }
+
+    .level-meter span {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--surface-2);
+      transition: background 0.15s;
+    }
+
+    .level-meter.active span {
+      background: var(--success);
+      animation: level 0.9s ease-in-out infinite;
+    }
+
+    .level-meter.active span:nth-child(1) { animation-delay: 0.0s; }
+    .level-meter.active span:nth-child(2) { animation-delay: 0.1s; }
+    .level-meter.active span:nth-child(3) { animation-delay: 0.2s; }
+    .level-meter.active span:nth-child(4) { animation-delay: 0.3s; }
+    .level-meter.active span:nth-child(5) { animation-delay: 0.15s; }
+
+    @keyframes level {
+      0%, 100% { height: 4px; opacity: 0.4; }
+      50%      { height: 16px; opacity: 1; }
+    }
+
+    /* ── Locations ──────────────────────────── */
+    #locations {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .loc {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 0.85rem;
+      padding: 0.85rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      align-items: center;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .loc-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.86rem;
+      min-width: 0;
+    }
+
+    .loc-ip {
+      font-family: ui-monospace, monospace;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .loc-place { color: var(--text); font-weight: 500; }
+
+    .loc-coords {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-family: ui-monospace, monospace;
+    }
+
+    .map {
+      width: 160px;
+      height: 110px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      filter: grayscale(20%) contrast(1.05);
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 1.25rem 1rem;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 500px) {
+      .loc { grid-template-columns: 1fr; }
+      .map { width: 100%; height: 140px; }
+    }
   </style>
 </head>
 <body>
-  <header><h1>Proctoring Dashboard</h1></header>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <h1>Proctoring Dashboard</h1>
+        <small>Live monitoring console</small>
+      </div>
+    </div>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+      <div class="audio-indicator" id="audioIndicator">
+        <div class="level-meter" id="levelMeter">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span id="audioStatus">Audio: waiting</span>
+      </div>
+      <div class="status-pill">
+        <span class="dot" id="connDot"></span>
+        <span id="connText">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
   <main>
-    <div class="panel">
-      <h2>Webcam Feed</h2>
-      <img id="webcam" alt="Webcam stream">
-    </div>
-    <div class="panel">
-      <h2>Screen Share</h2>
-      <img id="screen" alt="Screen stream">
-    </div>
-    <div class="panel" style="grid-column: span 2;">
-      <h2>Live Audio</h2>
-      <p>Student microphone/system audio will play here.</p>
-    </div>
-    <div class="panel" style="grid-column: span 2;">
-      <h2>Client Locations</h2>
-      <div id="locations"></div>
-    </div>
-    <div class="panel" style="grid-column: span 2; text-align:center;">
-      <button id="saveAudio">Save &amp; Download Audio</button>
-    </div>
+
+    <!-- ── Webcam (top left) ── -->
+    <section class="panel area-cam">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Webcam Feed
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="video-wrap">
+          <span class="badge"><span class="dot" id="camDot"></span>Camera</span>
+          <div class="placeholder" id="camPlaceholder">Waiting for client…</div>
+          <img id="webcam" alt="Webcam stream" style="display:none;">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Screen (top right) ── -->
+    <section class="panel area-screen">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Screen Share
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="video-wrap">
+          <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
+          <div class="placeholder" id="screenPlaceholder">Waiting for client…</div>
+          <img id="screen" alt="Screen stream" style="display:none;">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Locations (below, full width) ── -->
+    <section class="panel area-locations">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Client Locations
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="locations">
+          <div class="empty">No clients connected yet.</div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-
   <script>
     const socket = io();
 
-    // Video & Screen
-    socket.on('video_frame', data => {
-      document.getElementById('webcam').src = 'data:image/jpeg;base64,' + data;
+    // ─────────── Connection indicator ───────────
+    const connDot  = document.getElementById('connDot');
+    const connText = document.getElementById('connText');
+
+    socket.on('connect', () => {
+      connDot.classList.add('live');
+      connDot.classList.remove('offline');
+      connText.textContent = 'Connected';
     });
-    socket.on('screen_frame', data => {
-      document.getElementById('screen').src = 'data:image/jpeg;base64,' + data;
+    socket.on('disconnect', () => {
+      connDot.classList.remove('live');
+      connDot.classList.add('offline');
+      connText.textContent = 'Disconnected';
+    });
+    socket.on('connect_error', () => {
+      connDot.classList.remove('live');
+      connDot.classList.add('offline');
+      connText.textContent = 'Connection error';
     });
 
-    // Audio playback
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    socket.on('audio_data', b64 => {
-      const raw = atob(b64),
-            pcm = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) pcm[i] = raw.charCodeAt(i);
-      const wav = encodeWAV(pcm.buffer);
-      audioCtx.decodeAudioData(wav).then(buf => {
-        const src = audioCtx.createBufferSource();
-        src.buffer = buf;
-        src.connect(audioCtx.destination);
-        src.start();
-      });
+    // ─────────── Webcam ───────────
+    const webcamEl = document.getElementById('webcam');
+    const camPlaceholder = document.getElementById('camPlaceholder');
+    const camDot = document.getElementById('camDot');
+
+    socket.on('video_frame', data => {
+      webcamEl.src = 'data:image/jpeg;base64,' + data;
+      webcamEl.style.display = 'block';
+      camPlaceholder.style.display = 'none';
+      camDot.classList.add('live');
     });
-    function encodeWAV(samples) {
-      const buf = new ArrayBuffer(44 + samples.byteLength), dv = new DataView(buf);
-      function wstr(o,s){ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); }
-      wstr(0,'RIFF'); dv.setUint32(4,36+samples.byteLength,true);
-      wstr(8,'WAVE'); wstr(12,'fmt '); dv.setUint32(16,16,true);
-      dv.setUint16(20,1,true); dv.setUint16(22,1,true);
-      dv.setUint32(24,44100,true); dv.setUint32(28,44100*2,true);
-      dv.setUint16(32,2,true); dv.setUint16(34,16,true);
-      wstr(36,'data'); dv.setUint32(40,samples.byteLength,true);
-      new Uint8Array(buf,44).set(new Uint8Array(samples));
-      return buf;
+
+    // ─────────── Screen ───────────
+    const screenEl = document.getElementById('screen');
+    const screenPlaceholder = document.getElementById('screenPlaceholder');
+    const screenDot = document.getElementById('screenDot');
+
+    socket.on('screen_frame', data => {
+      screenEl.src = 'data:image/jpeg;base64,' + data;
+      screenEl.style.display = 'block';
+      screenPlaceholder.style.display = 'none';
+      screenDot.classList.add('live');
+    });
+
+    // ─────────── Live Audio (AUTO-START) ───────────
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+    const TARGET_LATENCY = 0.20;
+    let nextPlayTime = 0;
+
+    const audioStatusEl = document.getElementById('audioStatus');
+    const audioIndicator = document.getElementById('audioIndicator');
+    const levelMeter = document.getElementById('levelMeter');
+
+    async function tryAutostart() {
+      try {
+        await audioCtx.resume();
+        updateAudioUI();
+      } catch (e) {
+        audioStatusEl.textContent = 'Audio: click to enable';
+        audioIndicator.classList.add('blocked');
+      }
     }
 
-    // Client location with small Google Map
+    function updateAudioUI() {
+      if (audioCtx.state === 'running') {
+        audioStatusEl.textContent = 'Audio: live';
+        audioIndicator.classList.remove('blocked');
+        audioIndicator.classList.add('live');
+        levelMeter.classList.add('active');
+      } else {
+        audioStatusEl.textContent = 'Audio: click to enable';
+        audioIndicator.classList.remove('live');
+        audioIndicator.classList.add('blocked');
+        levelMeter.classList.remove('active');
+      }
+    }
+
+    ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'].forEach(evt => {
+      window.addEventListener(evt, function once() {
+        if (audioCtx.state !== 'running') {
+          audioCtx.resume().then(updateAudioUI).catch(() => {});
+        }
+        if (audioCtx.state === 'running') {
+          window.removeEventListener(evt, once);
+        }
+      }, { passive: true });
+    });
+
+    tryAutostart();
+
+    socket.on('audio_data', msg => {
+      if (audioCtx.state !== 'running') return;
+
+      const bin = atob(msg.pcm);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+      const int16 = new Int16Array(bytes.buffer);
+      const floats = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) floats[i] = int16[i] / 32768;
+
+      const buf = audioCtx.createBuffer(1, floats.length, msg.rate);
+      buf.copyToChannel(floats, 0);
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (nextPlayTime < now + 0.02) {
+        nextPlayTime = now + TARGET_LATENCY;
+      }
+      src.start(nextPlayTime);
+      nextPlayTime += buf.duration;
+    });
+
+    // ─────────── Location ───────────
+    const locationsEl = document.getElementById('locations');
+    let firstLoc = true;
+
     socket.on('client_location', loc => {
-      const container = document.getElementById('locations');
-      const div = document.createElement('div'),
-            info = document.createElement('div'),
-            iframe = document.createElement('iframe');
+      if (firstLoc) {
+        locationsEl.innerHTML = '';
+        firstLoc = false;
+      }
 
+      const div = document.createElement('div');
       div.className = 'loc';
-      info.className = 'loc-info';
-      info.textContent = `[${loc.ip}] ${loc.city || ''} ${loc.region || ''} ${loc.country || ''}`.trim();
 
+      const info = document.createElement('div');
+      info.className = 'loc-info';
+
+      const ipEl = document.createElement('div');
+      ipEl.className = 'loc-ip';
+      ipEl.textContent = loc.ip || 'Unknown IP';
+
+      const placeEl = document.createElement('div');
+      placeEl.className = 'loc-place';
+      const parts = [loc.city, loc.region, loc.country].filter(Boolean);
+      placeEl.textContent = parts.length ? parts.join(', ') : 'Location unavailable';
+
+      const coordsEl = document.createElement('div');
+      coordsEl.className = 'loc-coords';
+      if (loc.latitude && loc.longitude) {
+        coordsEl.textContent = `${(+loc.latitude).toFixed(4)}, ${(+loc.longitude).toFixed(4)}`;
+      }
+
+      info.appendChild(ipEl);
+      info.appendChild(placeEl);
+      if (coordsEl.textContent) info.appendChild(coordsEl);
+
+      const iframe = document.createElement('iframe');
+      iframe.className = 'map';
+      iframe.loading = 'lazy';
       const query = (loc.latitude && loc.longitude)
         ? `${loc.latitude},${loc.longitude}`
         : loc.ip;
-
-      iframe.className = 'map';
       iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=12&output=embed`;
 
       div.appendChild(info);
       div.appendChild(iframe);
-      container.appendChild(div);
+      locationsEl.appendChild(div);
     });
-
-    // Save audio
-    document.getElementById('saveAudio').onclick = () => {
-      window.location = '/save_audio';
-    };
   </script>
 
 </body>
