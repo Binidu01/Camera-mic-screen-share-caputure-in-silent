@@ -2,5 +2,6 @@ flask
 flask-socketio
 gevent
 gevent-websocket
+packaging
 requests
 gunicorn
