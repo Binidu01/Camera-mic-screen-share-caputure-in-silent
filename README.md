@@ -114,9 +114,10 @@ sequenceDiagram
 
 ## Prerequisites
 
-- Python 3.9 or newer on the student machine (only `client.py` needs to run locally — see [Running the System](#running-the-system)).
+- **For students (recommended path):** nothing but Windows and a webcam/microphone — the prebuilt `client.exe` from [Releases](https://github.com/Binidu01/Camera-mic-screen-share-caputure-in-silent/releases) needs no Python install.
+- **For running `client.py` from source instead:** Python 3.9 or newer.
 - A webcam and microphone on the student machine (screen share works without these).
-- A modern browser (Chrome, Edge, Firefox, Safari) on the instructor machine.
+- A modern browser (Chrome, Edge, Firefox, Safari) on the instructor's machine.
 - Network access on UDP/TCP port 7882 (WebRTC media) and TCP 443 (signaling) to reach LiveKit Cloud.
 - A LiveKit Cloud account with a project and API key — **only needed if self-hosting your own `token_server.py`.** Sign up at [livekit.io](https://livekit.io). Using the [live demo](https://camera-mic-screen-share-caputure-in.onrender.com/) requires no LiveKit account of your own.
 
@@ -124,16 +125,26 @@ sequenceDiagram
 
 ## Installation
 
-> **You probably only need this section for `client.py`.** `token_server.py` and `templates/index.html` are already deployed and running at the [live demo](https://camera-mic-screen-share-caputure-in.onrender.com/) — you don't need to host your own copy to try the system. Self-hosting the server is only necessary if you're forking the project or running your own separate deployment; see [Deployment](#deployment) for that.
+> **Most students don't need to install anything.** The teacher shares the prebuilt `client.exe` from [Releases](https://github.com/Binidu01/Camera-mic-screen-share-caputure-in-silent/releases) — the student just downloads and runs it. `token_server.py` and `templates/index.html` are already deployed at the [live demo](https://camera-mic-screen-share-caputure-in.onrender.com/), so there's nothing to host either. The steps below are only for running `client.py` from source, or for self-hosting the server.
 
-### 1. Clone the repository
+### Option A: Prebuilt executable (recommended for students)
+
+1. Go to the [Releases page](https://github.com/Binidu01/Camera-mic-screen-share-caputure-in-silent/releases).
+2. Download the latest `client.exe`.
+3. Run it. Windows/SmartScreen and the app itself will prompt for confirmation before anything starts — capture only begins once the student accepts.
+
+No Python, no dependencies, nothing else to configure.
+
+### Option B: Run `client.py` from source
+
+**1. Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/proctoring-system.git
-cd proctoring-system
+git clone https://github.com/Binidu01/Camera-mic-screen-share-caputure-in-silent.git
+cd Camera-mic-screen-share-caputure-in-silent
 ```
 
-### 2. Create and activate a virtual environment
+**2. Create and activate a virtual environment**
 
 ```bash
 python -m venv .venv
@@ -145,22 +156,20 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install client dependencies
-
-This is the only install step required to try the system against the live demo:
+**3. Install client dependencies**
 
 ```bash
-pip install opencv-python mss numpy requests sounddevice livekit
+pip install -r client-requirements.txt
 ```
 
 > On Linux, `sounddevice` requires PortAudio (`sudo apt install libportaudio2`). On macOS, it is bundled with the Homebrew Python distribution.
 
-### 4. (Optional) Install server dependencies
+### (Optional) Install server dependencies
 
 Only needed if you're self-hosting `token_server.py` instead of using the live demo:
 
 ```bash
-pip install flask flask-cors livekit-api python-dotenv
+pip install -r requirements.txt
 ```
 
 ---
@@ -217,9 +226,15 @@ TOKEN_URL = 'https://your-server.example.com/token'
 
 ## Running the System
 
-`token_server.py` and `templates/index.html` are already running at the live demo — there's nothing to start or host for those. The only thing that runs locally is `client.py`, on the student machine.
+`token_server.py` and `templates/index.html` are already running at the live demo — there's nothing to start or host for those.
 
-### 1. Start the client
+### For students: run the shared executable
+
+1. The teacher shares `client.exe` (from [Releases](https://github.com/Binidu01/Camera-mic-screen-share-caputure-in-silent/releases)).
+2. Double-click it. Accept the confirmation prompt — capture only starts after this.
+3. That's it. The webcam, screen, and mic tracks publish automatically to the live demo.
+
+### For running `client.py` from source instead
 
 On the student machine:
 
@@ -242,11 +257,11 @@ Audio stream started: 48000 Hz, 40 ms chunks
 Audio track published
 ```
 
-### 2. Open the dashboard
+### For the teacher: open the dashboard
 
 Open the live demo in a browser: **https://camera-mic-screen-share-caputure-in.onrender.com/**
 
-Click anywhere on the page once to satisfy the browser's autoplay policy — this unlocks audio playback. The webcam, screen, and microphone tracks will appear as `client.py` publishes them.
+Click anywhere on the page once to satisfy the browser's autoplay policy — this unlocks audio playback. Each student's webcam, screen, and microphone tracks appear as their `client.exe`/`client.py` publishes them.
 
 > If you're self-hosting your own `token_server.py` instead of using the demo, open your own deployment's URL (or `http://localhost:5000/` if serving locally) in place of the demo link.
 
