@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'client.py'
+      - 'client-requirements.txt'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: write
@@ -23,13 +27,11 @@ jobs:
         id: version
         shell: bash
         run: |
-          # Get the latest v* tag sorted by version, or empty if none exist
           LATEST=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
 
           if [ -z "$LATEST" ]; then
             NEXT="v1.0.0"
           else
-            # Strip leading 'v' and split into major.minor.patch
             VER="${LATEST#v}"
             MAJOR=$(echo "$VER" | cut -d. -f1)
             MINOR=$(echo "$VER" | cut -d. -f2)
@@ -54,7 +56,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --onefile --name client --console client.py
+          pyinstaller --onefile --noconsole --name client client.py
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
