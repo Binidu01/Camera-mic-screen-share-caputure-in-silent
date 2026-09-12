@@ -6,6 +6,7 @@ import os
 import requests
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
+from gevent import spawn
 
 app = Flask(__name__)
 
@@ -17,7 +18,6 @@ socketio = SocketIO(
     ping_timeout=60,
     logger=False,
     engineio_logger=False,
-    # Allow larger binary frames (screen @ 480x270 q25 is ~15 KB, so this is plenty)
     max_http_buffer_size=5_000_000,
 )
 
@@ -44,14 +44,18 @@ def on_disconnect():
 
 
 # ────────────── LOCATION ──────────────
-# Try three free providers in order. Each has different rate limits and
-# reliability, so if one is down or rate-limited we fall through to the next.
+# Cached so repeated connects don't re-hit rate limits or block the loop.
+_location_cache = {}
+
+
 def _lookup_location(ip):
+    if ip in _location_cache:
+        return _location_cache[ip]
+
     loc = {'ip': ip, 'city': '', 'region': '', 'country': '',
            'latitude': None, 'longitude': None}
 
-    # Provider 1: ip-api.com — 45 req/min free, no key required.
-    # NOTE: free tier is HTTP only, not HTTPS. Falls through on failure.
+    # Provider 1: ip-api.com — 45 req/min free, HTTP only on free tier.
     try:
         res = requests.get(
             f'http://ip-api.com/json/{ip}',
@@ -67,6 +71,7 @@ def _lookup_location(ip):
                 'longitude': res.get('lon'),
             })
             print(f"[ip-api] {ip} -> {loc['city']}, {loc['country']}")
+            _location_cache[ip] = loc
             return loc
     except Exception as e:
         print("ip-api lookup failed:", e)
@@ -83,12 +88,12 @@ def _lookup_location(ip):
                 'longitude': res.get('longitude'),
             })
             print(f"[ipwho.is] {ip} -> {loc['city']}, {loc['country']}")
+            _location_cache[ip] = loc
             return loc
     except Exception as e:
         print("ipwho.is lookup failed:", e)
 
-    # Provider 3: ipapi.co — HTTPS, 1000/day free (often rate-limited from
-    # shared cloud IPs like Render's, so it's last in the chain).
+    # Provider 3: ipapi.co — HTTPS, 1000/day free (often rate-limited).
     try:
         res = requests.get(f'https://ipapi.co/{ip}/json/', timeout=5).json()
         if not res.get('error'):
@@ -100,28 +105,33 @@ def _lookup_location(ip):
                 'longitude': res.get('longitude'),
             })
             print(f"[ipapi.co] {ip} -> {loc['city']}, {loc['country']}")
+            _location_cache[ip] = loc
             return loc
     except Exception as e:
         print("ipapi.co lookup failed:", e)
 
     print(f"[location] All providers failed for {ip}")
+    _location_cache[ip] = loc
     return loc
 
 
 @socketio.on('client_info')
 def handle_client_info(data):
     ip = data.get('ip', 'Unknown')
-    loc = _lookup_location(ip)
-    emit('client_location', loc, broadcast=True)
+    # Run in a background greenlet so a slow lookup never stalls
+    # video/audio for this (or any other) client.
+    def _job():
+        loc = _lookup_location(ip)
+        socketio.emit('client_location', loc, broadcast=True)
+    spawn(_job)
 
 
 # ────────────── WEBCAM ──────────────
-# Binary transport (bytes) — used by the low-latency client.
 @socketio.on('video_frame_bytes')
 def handle_video_bytes(data):
     emit('video_frame_bytes', data, broadcast=True, include_self=False)
 
-# Base64 fallback — kept so an older client can still connect.
+
 @socketio.on('video_frame')
 def handle_video(data):
     emit('video_frame', data, broadcast=True, include_self=False)
@@ -132,14 +142,20 @@ def handle_video(data):
 def handle_screen_bytes(data):
     emit('screen_frame_bytes', data, broadcast=True, include_self=False)
 
+
 @socketio.on('screen_frame')
 def handle_screen(data):
     emit('screen_frame', data, broadcast=True, include_self=False)
 
 
 # ────────────── LIVE AUDIO ──────────────
-# data = {pcm: base64, rate: int, channels: int}
-# Just relay it — no decoding, no storage.
+# New path: raw PCM bytes, no base64 / JSON.
+@socketio.on('audio_bytes')
+def handle_audio_bytes(data):
+    emit('audio_bytes', data, broadcast=True, include_self=False)
+
+
+# Legacy base64 path — kept so old clients still work.
 @socketio.on('audio_data')
 def handle_audio(data):
     emit('audio_data', data, broadcast=True, include_self=False)
