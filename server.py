@@ -17,9 +17,9 @@ socketio = SocketIO(
     ping_timeout=60,
     logger=False,
     engineio_logger=False,
+    # Allow larger binary frames (screen @ 480x270 q25 is ~15 KB, so this is plenty)
+    max_http_buffer_size=5_000_000,
 )
-
-broadcasters = set()
 
 
 @app.route('/')
@@ -40,15 +40,18 @@ def on_connect():
 
 @socketio.on('disconnect')
 def on_disconnect():
-    broadcasters.discard(request.sid)
     print(f"Client disconnected: {request.sid}")
 
 
 # ────────────── LOCATION ──────────────
+# Try three free providers in order. Each has different rate limits and
+# reliability, so if one is down or rate-limited we fall through to the next.
 def _lookup_location(ip):
     loc = {'ip': ip, 'city': '', 'region': '', 'country': '',
            'latitude': None, 'longitude': None}
 
+    # Provider 1: ip-api.com — 45 req/min free, no key required.
+    # NOTE: free tier is HTTP only, not HTTPS. Falls through on failure.
     try:
         res = requests.get(
             f'http://ip-api.com/json/{ip}',
@@ -63,10 +66,12 @@ def _lookup_location(ip):
                 'latitude':  res.get('lat'),
                 'longitude': res.get('lon'),
             })
+            print(f"[ip-api] {ip} -> {loc['city']}, {loc['country']}")
             return loc
     except Exception as e:
-        print("ip-api failed:", e)
+        print("ip-api lookup failed:", e)
 
+    # Provider 2: ipwho.is — unlimited, HTTPS, no key
     try:
         res = requests.get(f'https://ipwho.is/{ip}', timeout=5).json()
         if res.get('success'):
@@ -77,49 +82,67 @@ def _lookup_location(ip):
                 'latitude':  res.get('latitude'),
                 'longitude': res.get('longitude'),
             })
+            print(f"[ipwho.is] {ip} -> {loc['city']}, {loc['country']}")
             return loc
     except Exception as e:
-        print("ipwho.is failed:", e)
+        print("ipwho.is lookup failed:", e)
 
+    # Provider 3: ipapi.co — HTTPS, 1000/day free (often rate-limited from
+    # shared cloud IPs like Render's, so it's last in the chain).
+    try:
+        res = requests.get(f'https://ipapi.co/{ip}/json/', timeout=5).json()
+        if not res.get('error'):
+            loc.update({
+                'city':      res.get('city', ''),
+                'region':    res.get('region', ''),
+                'country':   res.get('country_name', ''),
+                'latitude':  res.get('latitude'),
+                'longitude': res.get('longitude'),
+            })
+            print(f"[ipapi.co] {ip} -> {loc['city']}, {loc['country']}")
+            return loc
+    except Exception as e:
+        print("ipapi.co lookup failed:", e)
+
+    print(f"[location] All providers failed for {ip}")
     return loc
 
 
 @socketio.on('client_info')
 def handle_client_info(data):
     ip = data.get('ip', 'Unknown')
-    emit('client_location', _lookup_location(ip), broadcast=True)
+    loc = _lookup_location(ip)
+    emit('client_location', loc, broadcast=True)
 
 
-# ────────────── WEBRTC SIGNALING ──────────────
-@socketio.on('register_broadcaster')
-def on_register_broadcaster(data=None):
-    broadcasters.add(request.sid)
-    print(f"Broadcaster registered: {request.sid}")
+# ────────────── WEBCAM ──────────────
+# Binary transport (bytes) — used by the low-latency client.
+@socketio.on('video_frame_bytes')
+def handle_video_bytes(data):
+    emit('video_frame_bytes', data, broadcast=True, include_self=False)
+
+# Base64 fallback — kept so an older client can still connect.
+@socketio.on('video_frame')
+def handle_video(data):
+    emit('video_frame', data, broadcast=True, include_self=False)
 
 
-@socketio.on('viewer_ready')
-def on_viewer_ready():
-    """A proctor page opened → ask every broadcaster to send them an offer."""
-    for b in list(broadcasters):
-        emit('viewer_joined', {'sid': request.sid}, to=b)
+# ────────────── SCREEN ──────────────
+@socketio.on('screen_frame_bytes')
+def handle_screen_bytes(data):
+    emit('screen_frame_bytes', data, broadcast=True, include_self=False)
+
+@socketio.on('screen_frame')
+def handle_screen(data):
+    emit('screen_frame', data, broadcast=True, include_self=False)
 
 
-@socketio.on('webrtc_offer')
-def on_offer(data):
-    emit('webrtc_offer', {'from': request.sid, 'sdp': data['sdp']},
-         to=data['target'])
-
-
-@socketio.on('webrtc_answer')
-def on_answer(data):
-    emit('webrtc_answer', {'from': request.sid, 'sdp': data['sdp']},
-         to=data['target'])
-
-
-@socketio.on('webrtc_ice')
-def on_ice(data):
-    emit('webrtc_ice', {'from': request.sid, 'candidate': data['candidate']},
-         to=data['target'])
+# ────────────── LIVE AUDIO ──────────────
+# data = {pcm: base64, rate: int, channels: int}
+# Just relay it — no decoding, no storage.
+@socketio.on('audio_data')
+def handle_audio(data):
+    emit('audio_data', data, broadcast=True, include_self=False)
 
 
 if __name__ == '__main__':
@@ -128,5 +151,9 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
     print(f"Starting server on 0.0.0.0:{port}")
-    server = pywsgi.WSGIServer(('', port), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(
+        ('', port),
+        app,
+        handler_class=WebSocketHandler,
+    )
     server.serve_forever()
