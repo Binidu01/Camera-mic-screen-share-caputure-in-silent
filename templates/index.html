@@ -97,7 +97,7 @@
       background: #05080e; border-radius: 10px; overflow: hidden;
       border: 1px solid var(--border);
     }
-    .video-wrap img {
+    .video-wrap video {
       width: 100%; height: 100%; object-fit: contain;
       display: block; background: #05080e;
     }
@@ -166,7 +166,7 @@
         <div class="video-wrap">
           <span class="badge"><span class="dot" id="camDot"></span>Camera</span>
           <div class="placeholder" id="camPlaceholder">Waiting for client…</div>
-          <img id="webcam" alt="Webcam stream" style="display:none;">
+          <video id="webcam" autoplay playsinline muted style="display:none;"></video>
         </div>
       </div>
     </section>
@@ -182,166 +182,117 @@
         <div class="video-wrap">
           <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
           <div class="placeholder" id="screenPlaceholder">Waiting for client…</div>
-          <img id="screen" alt="Screen stream" style="display:none;">
+          <video id="screen" autoplay playsinline muted style="display:none;"></video>
         </div>
       </div>
     </section>
   </main>
 
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
   <script>
-    const socket = io({ transports: ['websocket'] });
-
     // ─────────── Connection indicator ───────────
     const connDot  = document.getElementById('connDot');
     const connText = document.getElementById('connText');
 
-    socket.on('connect', () => {
+    function setConnected() {
       connDot.classList.add('live'); connDot.classList.remove('offline');
       connText.textContent = 'Connected';
-    });
-    socket.on('disconnect', () => {
+    }
+    function setDisconnected(msg) {
       connDot.classList.remove('live'); connDot.classList.add('offline');
-      connText.textContent = 'Disconnected';
-    });
-    socket.on('connect_error', () => {
-      connDot.classList.remove('live'); connDot.classList.add('offline');
-      connText.textContent = 'Connection error';
-    });
-
-    // ─────────── Video frame rendering ───────────
-    function makeFramePump(imgEl, placeholderEl, dotEl) {
-      let pendingBuf = null;
-      let decoding = false;
-      let currentUrl = null;
-
-      function decodeNext() {
-        if (decoding || pendingBuf === null) return;
-        decoding = true;
-        const buf = pendingBuf;
-        pendingBuf = null;
-
-        const blob = buf instanceof Blob ? buf : new Blob([buf], { type: 'image/jpeg' });
-        const url = URL.createObjectURL(blob);
-
-        imgEl.onload = () => {
-          const old = currentUrl;
-          currentUrl = url;
-          if (old) URL.revokeObjectURL(old);
-          decoding = false;
-          if (pendingBuf !== null) decodeNext();
-        };
-        imgEl.onerror = () => {
-          URL.revokeObjectURL(url);
-          decoding = false;
-          if (pendingBuf !== null) decodeNext();
-        };
-        imgEl.src = url;
-
-        imgEl.style.display = 'block';
-        placeholderEl.style.display = 'none';
-        dotEl.classList.add('live');
-      }
-
-      return {
-        pushBinary(buf) { pendingBuf = buf; decodeNext(); },
-        pushBase64(b64) {
-          imgEl.src = 'data:image/jpeg;base64,' + b64;
-          imgEl.style.display = 'block';
-          placeholderEl.style.display = 'none';
-          dotEl.classList.add('live');
-        },
-      };
+      connText.textContent = msg || 'Disconnected';
     }
 
-    const camPump = makeFramePump(
-      document.getElementById('webcam'),
-      document.getElementById('camPlaceholder'),
-      document.getElementById('camDot')
-    );
-    const screenPump = makeFramePump(
-      document.getElementById('screen'),
-      document.getElementById('screenPlaceholder'),
-      document.getElementById('screenDot')
-    );
+    // ─────────── LiveKit room ───────────
+    const room = new LivekitClient.Room({
+      adaptiveStream: true,
+      dynacast: true,
+    });
 
-    socket.on('video_frame_bytes',  buf => camPump.pushBinary(buf));
-    socket.on('video_frame',        b64 => camPump.pushBase64(b64));
-    socket.on('screen_frame_bytes', buf => screenPump.pushBinary(buf));
-    socket.on('screen_frame',       b64 => screenPump.pushBase64(b64));
+    const webcamEl = document.getElementById('webcam');
+    const screenEl = document.getElementById('screen');
+    const camPlaceholder = document.getElementById('camPlaceholder');
+    const screenPlaceholder = document.getElementById('screenPlaceholder');
+    const camDot = document.getElementById('camDot');
+    const screenDot = document.getElementById('screenDot');
 
-    // ─────────── Live Audio (AudioWorklet) ───────────
+    function attachVideo(el, placeholder, dot) {
+      el.style.display = 'block';
+      placeholder.style.display = 'none';
+      dot.classList.add('live');
+    }
+
+    // Called when a remote track (from client.py) is subscribed
+    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      console.log('Track subscribed:', track.kind, track.source, track.name);
+
+      if (track.kind === 'video') {
+        // Screen share has source === 'screen_share'; webcam has source === 'camera'
+        if (track.source === 'screen_share' || track.name === 'screen') {
+          track.attach(screenEl);
+          attachVideo(screenEl, screenPlaceholder, screenDot);
+        } else {
+          track.attach(webcamEl);
+          attachVideo(webcamEl, camPlaceholder, camDot);
+        }
+      } else if (track.kind === 'audio') {
+        // Attach audio to a hidden element (created by LiveKit)
+        const el = track.attach();
+        el.style.display = 'none';
+        document.body.appendChild(el);
+        updateAudioUI(true);
+      }
+    });
+
+    room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+      console.log('Track unsubscribed:', track.kind, track.source);
+      track.detach();
+      if (track.kind === 'video') {
+        if (track.source === 'screen_share' || track.name === 'screen') {
+          screenEl.srcObject = null;
+          screenEl.style.display = 'none';
+          screenPlaceholder.style.display = 'grid';
+          screenDot.classList.remove('live');
+        } else {
+          webcamEl.srcObject = null;
+          webcamEl.style.display = 'none';
+          camPlaceholder.style.display = 'grid';
+          camDot.classList.remove('live');
+        }
+      } else if (track.kind === 'audio') {
+        updateAudioUI(false);
+      }
+    });
+
+    room.on(LivekitClient.RoomEvent.Disconnected, () => {
+      setDisconnected('Disconnected');
+    });
+
+    // ─────────── Audio UI + level meter ───────────
     const audioStatusEl = document.getElementById('audioStatus');
     const audioIndicator = document.getElementById('audioIndicator');
     const levelMeter = document.getElementById('levelMeter');
     const meterBars = levelMeter.querySelectorAll('span');
 
-    let audioCtx = null;
-    let workletNode = null;
+    // LiveKit doesn't expose an AnalyserNode directly, so we build our own
+    // analyser by creating a MediaStream from the subscribed audio track.
+    let analyserCtx = null;
     let analyser = null;
-    let audioReady = false;
-    const SAMPLE_RATE = 48000;
 
-    const workletSrc = `
-      class PCMPlayer extends AudioWorkletProcessor {
-        constructor() {
-          super();
-          this.queue = [];
-          this.offset = 0;
-          this.port.onmessage = (e) => {
-            const f32 = e.data;
-            this.queue.push(f32);
-            // ~83 ms max buffer to keep latency low.
-            let total = 0;
-            for (let i = 0; i < this.queue.length; i++) total += this.queue[i].length;
-            while (total > 4000 && this.queue.length > 1) {
-              total -= this.queue.shift().length;
-            }
-          };
-        }
-        process(inputs, outputs) {
-          const out = outputs[0][0];
-          let i = 0;
-          while (i < out.length) {
-            if (this.queue.length === 0) { out[i++] = 0; continue; }
-            const cur = this.queue[0];
-            const remain = cur.length - this.offset;
-            const need = out.length - i;
-            const n = Math.min(remain, need);
-            out.set(cur.subarray(this.offset, this.offset + n), i);
-            i += n;
-            this.offset += n;
-            if (this.offset >= cur.length) { this.queue.shift(); this.offset = 0; }
-          }
-          return true;
-        }
-      }
-      registerProcessor('pcm-player', PCMPlayer);
-    `;
-
-    async function ensureAudio() {
-      if (audioReady) return;
-      audioReady = true;
+    function startMeter(mediaStreamTrack) {
       try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-          sampleRate: SAMPLE_RATE,
-          latencyHint: 'interactive',
-        });
-
-        const blob = new Blob([workletSrc], { type: 'application/javascript' });
-        const url  = URL.createObjectURL(blob);
-        await audioCtx.audioWorklet.addModule(url);
-        URL.revokeObjectURL(url);
-
-        workletNode = new AudioWorkletNode(audioCtx, 'pcm-player');
-        analyser = audioCtx.createAnalyser();
+        if (!analyserCtx) {
+          analyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const stream = new MediaStream([mediaStreamTrack]);
+        const src = analyserCtx.createMediaStreamSource(stream);
+        analyser = analyserCtx.createAnalyser();
         analyser.fftSize = 256;
-        workletNode.connect(analyser);
-        analyser.connect(audioCtx.destination);
+        src.connect(analyser);
 
         const tmp = new Uint8Array(analyser.fftSize);
-        function drawMeter() {
-          if (audioCtx && audioCtx.state === 'running') {
+        function draw() {
+          if (analyserCtx.state === 'running') {
             analyser.getByteTimeDomainData(tmp);
             let sum = 0;
             for (let i = 0; i < tmp.length; i++) {
@@ -357,28 +308,31 @@
               b.style.background = idx < active ? 'var(--success)' : 'var(--surface-2)';
             });
           }
-          requestAnimationFrame(drawMeter);
+          requestAnimationFrame(draw);
         }
-        drawMeter();
-
-        updateAudioUI();
+        draw();
       } catch (e) {
-        console.error('Audio init failed', e);
-        audioReady = false;
-        audioStatusEl.textContent = 'Audio: unavailable';
+        console.warn('Meter init failed:', e);
       }
     }
 
-    function updateAudioUI() {
-      if (audioCtx && audioCtx.state === 'running') {
+    // Also start meter on audio subscriptions specifically
+    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === 'audio' && track.mediaStreamTrack) {
+        startMeter(track.mediaStreamTrack);
+      }
+    });
+
+    function updateAudioUI(live) {
+      if (live) {
         audioStatusEl.textContent = 'Audio: live';
         audioIndicator.classList.remove('blocked');
         audioIndicator.classList.add('live');
         levelMeter.classList.add('active');
       } else {
-        audioStatusEl.textContent = 'Audio: click to enable';
+        audioStatusEl.textContent = 'Audio: waiting';
         audioIndicator.classList.remove('live');
-        audioIndicator.classList.add('blocked');
+        audioIndicator.classList.remove('blocked');
         levelMeter.classList.remove('active');
       }
     }
@@ -399,45 +353,39 @@
     document.body.appendChild(gate);
 
     async function unlockAudio() {
-      await ensureAudio();
-      if (audioCtx && audioCtx.state === 'suspended') {
-        try { await audioCtx.resume(); } catch (_) {}
-      }
-      updateAudioUI();
-      if (audioCtx && audioCtx.state === 'running') {
+      try {
+        await room.startAudio();
         gate.remove();
+      } catch (e) {
+        // Not fatal; user can click again later
+        console.warn('startAudio failed:', e);
       }
     }
 
     ['click','touchstart','pointerdown','keydown'].forEach(e =>
       window.addEventListener(e, unlockAudio, { passive: true }));
 
-    // Try silently on load — succeeds if browser already trusts this origin.
-    unlockAudio();
+    // ─────────── Connect to LiveKit ───────────
+    async function connect() {
+      try {
+        const resp = await fetch('/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: 'viewer' }),
+        });
+        if (!resp.ok) throw new Error('Token fetch failed: ' + resp.status);
+        const { token, url } = await resp.json();
 
-    // ─────────── Audio ingest ───────────
-    function pcm16ToFloat32(buf) {
-      const i16 = new Int16Array(buf);
-      const f32 = new Float32Array(i16.length);
-      for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768;
-      return f32;
+        await room.connect(url, token);
+        setConnected();
+        console.log('Connected to LiveKit room:', room.name);
+      } catch (e) {
+        console.error('Connect failed:', e);
+        setDisconnected('Connection error');
+      }
     }
 
-    socket.on('audio_bytes', async (data) => {
-      await ensureAudio();
-      if (!audioCtx || audioCtx.state !== 'running') return;
-      const buf = data instanceof ArrayBuffer ? data : new Uint8Array(data).buffer;
-      workletNode.port.postMessage(pcm16ToFloat32(buf), []);
-    });
-
-    socket.on('audio_data', async (msg) => {
-      await ensureAudio();
-      if (!audioCtx || audioCtx.state !== 'running') return;
-      const bin = atob(msg.pcm);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      workletNode.port.postMessage(pcm16ToFloat32(bytes.buffer), []);
-    });
+    connect();
   </script>
 
 </body>
