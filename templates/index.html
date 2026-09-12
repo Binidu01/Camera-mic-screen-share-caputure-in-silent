@@ -69,15 +69,14 @@
     main {
       max-width: 1800px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem;
       display: grid; grid-template-columns: 1fr 1fr;
-      grid-template-areas: "cam screen" "locations locations";
+      grid-template-areas: "cam screen";
       gap: 1.25rem;
     }
     @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; grid-template-areas: "cam" "screen" "locations"; padding: 1rem; }
+      main { grid-template-columns: 1fr; grid-template-areas: "cam" "screen"; padding: 1rem; }
     }
-    .area-locations { grid-area: locations; }
-    .area-cam       { grid-area: cam; }
-    .area-screen    { grid-area: screen; }
+    .area-cam    { grid-area: cam; }
+    .area-screen { grid-area: screen; }
 
     .panel {
       background: var(--surface); border: 1px solid var(--border);
@@ -123,45 +122,12 @@
     .audio-indicator.live { color: var(--success); }
     .audio-indicator.blocked { color: var(--danger); }
 
-    .level-meter {
-      display: flex; gap: 3px; align-items: flex-end; height: 18px;
-    }
+    .level-meter { display: flex; gap: 3px; align-items: flex-end; height: 18px; }
     .level-meter span {
       width: 3px; height: 4px; border-radius: 2px;
       background: var(--surface-2); transition: height 0.08s, background 0.08s;
     }
     .level-meter.active span { background: var(--success); }
-
-    #locations {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 0.85rem;
-    }
-    .loc {
-      display: grid; grid-template-columns: 1fr 160px; gap: 0.85rem;
-      padding: 0.85rem; background: var(--surface-2);
-      border: 1px solid var(--border); border-radius: 10px;
-      align-items: center; animation: fadeIn 0.4s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-    .loc-info { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.86rem; min-width: 0; }
-    .loc-ip { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.8rem; font-weight: 500; }
-    .loc-place { color: var(--text); font-weight: 500; }
-    .loc-place.unavailable { color: var(--text-dim); font-style: italic; font-weight: 400; }
-    .loc-coords { color: var(--text-dim); font-size: 0.75rem; font-family: ui-monospace, monospace; }
-
-    .map {
-      width: 160px; height: 110px;
-      border: 1px solid var(--border); border-radius: 8px;
-      filter: grayscale(20%) contrast(1.05);
-    }
-
-    .empty { text-align: center; color: var(--text-dim); padding: 1.25rem 1rem; font-size: 0.88rem; }
-
-    @media (max-width: 500px) {
-      .loc { grid-template-columns: 1fr; }
-      .map { width: 100%; height: 140px; }
-    }
   </style>
 </head>
 <body>
@@ -220,20 +186,6 @@
         </div>
       </div>
     </section>
-
-    <section class="panel area-locations">
-      <div class="panel-header">
-        <div class="panel-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Client Locations
-        </div>
-      </div>
-      <div class="panel-body">
-        <div id="locations">
-          <div class="empty">No clients connected yet.</div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
@@ -258,11 +210,7 @@
     });
 
     // ─────────── Video frame rendering ───────────
-    // Per-image "latest wins" logic: if a new frame arrives before the
-    // previous one finished decoding, we drop the intermediate one.
-    // This is essential at 12+ fps on slower clients — otherwise the
-    // browser queues frames and playback drifts behind real time.
-    function makeFramePump(imgEl, placeholderEl, dotEl, kind) {
+    function makeFramePump(imgEl, placeholderEl, dotEl) {
       let pendingBuf = null;
       let decoding = false;
       let currentUrl = null;
@@ -306,23 +254,23 @@
       };
     }
 
-    const webcamEl = document.getElementById('webcam');
-    const camPlaceholder = document.getElementById('camPlaceholder');
-    const camDot = document.getElementById('camDot');
-
-    const screenEl = document.getElementById('screen');
-    const screenPlaceholder = document.getElementById('screenPlaceholder');
-    const screenDot = document.getElementById('screenDot');
-
-    const camPump = makeFramePump(webcamEl, camPlaceholder, camDot, 'cam');
-    const screenPump = makeFramePump(screenEl, screenPlaceholder, screenDot, 'screen');
+    const camPump = makeFramePump(
+      document.getElementById('webcam'),
+      document.getElementById('camPlaceholder'),
+      document.getElementById('camDot')
+    );
+    const screenPump = makeFramePump(
+      document.getElementById('screen'),
+      document.getElementById('screenPlaceholder'),
+      document.getElementById('screenDot')
+    );
 
     socket.on('video_frame_bytes',  buf => camPump.pushBinary(buf));
     socket.on('video_frame',        b64 => camPump.pushBase64(b64));
     socket.on('screen_frame_bytes', buf => screenPump.pushBinary(buf));
     socket.on('screen_frame',       b64 => screenPump.pushBase64(b64));
 
-    // ─────────── Live Audio (AudioWorklet, low latency) ───────────
+    // ─────────── Live Audio (AudioWorklet) ───────────
     const audioStatusEl = document.getElementById('audioStatus');
     const audioIndicator = document.getElementById('audioIndicator');
     const levelMeter = document.getElementById('levelMeter');
@@ -332,10 +280,8 @@
     let workletNode = null;
     let analyser = null;
     let audioReady = false;
-
     const SAMPLE_RATE = 48000;
 
-    // Inline worklet — avoids a separate .js file and any extra HTTP fetch.
     const workletSrc = `
       class PCMPlayer extends AudioWorkletProcessor {
         constructor() {
@@ -345,10 +291,10 @@
           this.port.onmessage = (e) => {
             const f32 = e.data;
             this.queue.push(f32);
-            // Keep at most ~250 ms of backlog; drop oldest on overflow.
+            // ~83 ms max buffer to keep latency low.
             let total = 0;
             for (let i = 0; i < this.queue.length; i++) total += this.queue[i].length;
-            while (total > 12000 && this.queue.length > 1) {
+            while (total > 4000 && this.queue.length > 1) {
               total -= this.queue.shift().length;
             }
           };
@@ -388,14 +334,11 @@
         URL.revokeObjectURL(url);
 
         workletNode = new AudioWorkletNode(audioCtx, 'pcm-player');
-
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
-
         workletNode.connect(analyser);
         analyser.connect(audioCtx.destination);
 
-        // Level meter loop
         const tmp = new Uint8Array(analyser.fftSize);
         function drawMeter() {
           if (audioCtx && audioCtx.state === 'running') {
@@ -405,9 +348,8 @@
               const v = (tmp[i] - 128) / 128;
               sum += v * v;
             }
-            const rms = Math.sqrt(sum / tmp.length);       // 0..~1
-            const db  = 20 * Math.log10(rms + 1e-6);        // ~ -120..0
-            // Map -60..0 dB to 0..5 bars
+            const rms = Math.sqrt(sum / tmp.length);
+            const db  = 20 * Math.log10(rms + 1e-6);
             const active = Math.max(0, Math.min(meterBars.length,
               Math.round(((db + 60) / 60) * meterBars.length)));
             meterBars.forEach((b, idx) => {
@@ -441,31 +383,37 @@
       }
     }
 
-    // Try to autostart. Browsers block AudioContext until a user gesture,
-    // so hook every reasonable gesture and remove each listener once it fires.
-    async function tryResume() {
+    // ─────────── Full-screen click-to-start audio gate ───────────
+    const gate = document.createElement('div');
+    gate.id = 'audioGate';
+    gate.innerHTML = '🔊 Click anywhere to start';
+    Object.assign(gate.style, {
+      position: 'fixed', inset: '0', zIndex: 9999,
+      background: 'rgba(5, 8, 14, 0.92)',
+      display: 'grid', placeItems: 'center',
+      color: '#e6edf5', cursor: 'pointer',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: '1.15rem', letterSpacing: '0.02em',
+      backdropFilter: 'blur(6px)',
+    });
+    document.body.appendChild(gate);
+
+    async function unlockAudio() {
       await ensureAudio();
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') {
+      if (audioCtx && audioCtx.state === 'suspended') {
         try { await audioCtx.resume(); } catch (_) {}
       }
       updateAudioUI();
+      if (audioCtx && audioCtx.state === 'running') {
+        gate.remove();
+      }
     }
 
-    ['click','touchstart','keydown','scroll','mousemove','pointerdown'].forEach(evt => {
-      const handler = () => {
-        tryResume();
-        if (audioCtx && audioCtx.state === 'running') {
-          ['click','touchstart','keydown','scroll','mousemove','pointerdown']
-            .forEach(e => window.removeEventListener(e, handler));
-        }
-      };
-      window.addEventListener(evt, handler, { passive: true });
-    });
+    ['click','touchstart','pointerdown','keydown'].forEach(e =>
+      window.addEventListener(e, unlockAudio, { passive: true }));
 
-    // Kick off immediately; if the browser already trusts the page
-    // (e.g. media engagement index is high), this will succeed silently.
-    tryResume();
+    // Try silently on load — succeeds if browser already trusts this origin.
+    unlockAudio();
 
     // ─────────── Audio ingest ───────────
     function pcm16ToFloat32(buf) {
@@ -475,7 +423,6 @@
       return f32;
     }
 
-    // New binary path
     socket.on('audio_bytes', async (data) => {
       await ensureAudio();
       if (!audioCtx || audioCtx.state !== 'running') return;
@@ -483,7 +430,6 @@
       workletNode.port.postMessage(pcm16ToFloat32(buf), []);
     });
 
-    // Legacy base64 path (kept so nothing breaks if server still sends it)
     socket.on('audio_data', async (msg) => {
       await ensureAudio();
       if (!audioCtx || audioCtx.state !== 'running') return;
@@ -491,67 +437,6 @@
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       workletNode.port.postMessage(pcm16ToFloat32(bytes.buffer), []);
-    });
-
-    // ─────────── Location ───────────
-    const locationsEl = document.getElementById('locations');
-    let firstLoc = true;
-    const seenIPs = new Set();
-
-    socket.on('client_location', loc => {
-      if (firstLoc) { locationsEl.innerHTML = ''; firstLoc = false; }
-
-      // De-duplicate: if we've already shown this IP, update it instead
-      // of appending a duplicate card on every reconnect.
-      const key = loc.ip || 'unknown';
-      if (seenIPs.has(key)) {
-        const existing = document.querySelector(`.loc[data-ip="${CSS.escape(key)}"]`);
-        if (existing) existing.remove();
-      }
-      seenIPs.add(key);
-
-      const div = document.createElement('div');
-      div.className = 'loc';
-      div.dataset.ip = key;
-
-      const info = document.createElement('div');
-      info.className = 'loc-info';
-
-      const ipEl = document.createElement('div');
-      ipEl.className = 'loc-ip';
-      ipEl.textContent = loc.ip || 'Unknown IP';
-
-      const placeEl = document.createElement('div');
-      const parts = [loc.city, loc.region, loc.country].filter(Boolean);
-      if (parts.length) {
-        placeEl.className = 'loc-place';
-        placeEl.textContent = parts.join(', ');
-      } else {
-        placeEl.className = 'loc-place unavailable';
-        placeEl.textContent = 'Location unavailable';
-      }
-
-      const coordsEl = document.createElement('div');
-      coordsEl.className = 'loc-coords';
-      if (loc.latitude && loc.longitude) {
-        coordsEl.textContent = `${(+loc.latitude).toFixed(4)}, ${(+loc.longitude).toFixed(4)}`;
-      }
-
-      info.appendChild(ipEl);
-      info.appendChild(placeEl);
-      if (coordsEl.textContent) info.appendChild(coordsEl);
-
-      const iframe = document.createElement('iframe');
-      iframe.className = 'map';
-      iframe.loading = 'lazy';
-      const query = (loc.latitude && loc.longitude)
-        ? `${loc.latitude},${loc.longitude}`
-        : loc.ip;
-      iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=12&output=embed`;
-
-      div.appendChild(info);
-      div.appendChild(iframe);
-      locationsEl.appendChild(div);
     });
   </script>
 
