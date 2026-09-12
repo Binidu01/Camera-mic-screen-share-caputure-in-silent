@@ -1,18 +1,28 @@
 import os
 import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from livekit import api
 
 app = Flask(__name__)
 CORS(app)
 
-# Read credentials from environment variables (set in Render dashboard)
 LIVEKIT_API_KEY    = os.environ["LIVEKIT_API_KEY"]
 LIVEKIT_API_SECRET = os.environ["LIVEKIT_API_SECRET"]
 LIVEKIT_URL        = os.environ["LIVEKIT_URL"]
 
 ROOM_NAME = "proctor-room"
+
+
+@app.route('/')
+def index():
+    """Serve the viewer HTML from templates/index.html."""
+    return render_template('index.html')
+
+
+@app.route('/healthz')
+def healthz():
+    return "ok", 200
 
 
 @app.route('/token', methods=['POST'])
@@ -35,11 +45,6 @@ def get_token():
     )
 
     return jsonify({'token': token, 'url': LIVEKIT_URL})
-
-
-@app.route('/healthz')
-def healthz():
-    return "ok", 200
 
 
 if __name__ == '__main__':
