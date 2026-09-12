@@ -4,375 +4,621 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Proctoring Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f17; --surface: #131a26; --surface-2: #1a2332;
-      --border: #232e42; --text: #e6edf5; --text-dim: #8794ab;
-      --accent: #4f8cff; --accent-glow: rgba(79,140,255,.35);
-      --success: #22c55e; --danger: #ef4444;
-      --radius: 14px; --shadow: 0 8px 32px rgba(0,0,0,.35);
+      --bg:          #0b0f17;
+      --surface:     #131a26;
+      --surface-2:   #1a2332;
+      --border:      #232e42;
+      --text:        #e6edf5;
+      --text-dim:    #8794ab;
+      --accent:      #4f8cff;
+      --accent-glow: rgba(79, 140, 255, 0.35);
+      --success:     #22c55e;
+      --danger:      #ef4444;
+      --radius:      14px;
+      --shadow:      0 8px 32px rgba(0, 0, 0, 0.35);
     }
+
     * { box-sizing: border-box; }
+
     html, body {
-      margin: 0; padding: 0; background: var(--bg); color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif; font-size: 15px; min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
     }
+
+    /* ── Header ─────────────────────────────── */
     header {
-      position: sticky; top: 0; z-index: 50;
-      background: rgba(11,15,23,.85); backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 15, 23, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
-      padding: .85rem 1.5rem; display: flex; align-items: center;
-      justify-content: space-between; gap: 1rem;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
     }
-    .brand { display: flex; align-items: center; gap: .75rem; }
+
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+
     .brand-logo {
-      width: 36px; height: 36px; border-radius: 10px;
+      width: 36px; height: 36px;
+      border-radius: 10px;
       background: linear-gradient(135deg, var(--accent), #7c5cff);
-      display: grid; place-items: center; font-weight: 700;
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 17px;
       box-shadow: 0 0 24px var(--accent-glow);
     }
-    .brand h1 { margin: 0; font-size: 1.05rem; font-weight: 600; }
-    .brand small { display: block; color: var(--text-dim); font-size: .72rem; }
-    .status-pill {
-      display: inline-flex; align-items: center; gap: .5rem;
-      padding: .4rem .9rem; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 999px;
-      font-size: .8rem; color: var(--text-dim);
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
-    .dot.live { background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 1.6s infinite; }
-    .dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.9)} }
 
+    .brand h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand small {
+      display: block;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      font-weight: 400;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: background 0.3s;
+    }
+    .dot.live {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    /* ── Layout ─────────────────────────────── */
     main {
-      max-width: 1800px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem;
-      display: grid; grid-template-columns: 1fr 1fr;
-      grid-template-areas: "cam screen" "locations locations";
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "cam       screen"
+        "locations locations";
       gap: 1.25rem;
     }
+
     @media (max-width: 900px) {
-      main { grid-template-columns: 1fr;
-             grid-template-areas: "cam" "screen" "locations"; padding: 1rem; }
+      main {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "cam"
+          "screen"
+          "locations";
+        padding: 1rem;
+      }
     }
-    .area-cam { grid-area: cam; }
-    .area-screen { grid-area: screen; }
+
     .area-locations { grid-area: locations; }
+    .area-cam       { grid-area: cam; }
+    .area-screen    { grid-area: screen; }
 
+    /* ── Panels ─────────────────────────────── */
     .panel {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow);
-      overflow: hidden; display: flex; flex-direction: column; min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
-    .panel-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: .85rem 1.15rem; border-bottom: 1px solid var(--border);
-    }
-    .panel-title { display: flex; align-items: center; gap: .6rem; font-weight: 600; font-size: .92rem; }
-    .panel-title svg { width: 17px; height: 17px; color: var(--accent); }
-    .panel-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.15rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .panel-title svg { width: 17px; height: 17px; color: var(--accent); }
+
+    .panel-body {
+      padding: 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    /* ── Video frames (equal size) ──────────── */
     .video-wrap {
-      position: relative; width: 100%; aspect-ratio: 16/9;
-      background: #05080e; border-radius: 10px; overflow: hidden;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #05080e;
+      border-radius: 10px;
+      overflow: hidden;
       border: 1px solid var(--border);
     }
-    .video-wrap video {
-      width: 100%; height: 100%; object-fit: contain; display: block; background: #05080e;
+
+    .video-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #05080e;
     }
+
     .video-wrap .placeholder {
-      position: absolute; inset: 0; display: grid; place-items: center;
-      color: var(--text-dim); font-size: .85rem; text-align: center; padding: 1rem;
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 1rem;
     }
+
     .video-wrap .badge {
-      position: absolute; top: .6rem; left: .6rem;
-      padding: .25rem .6rem; background: rgba(0,0,0,.65);
-      backdrop-filter: blur(6px); border-radius: 6px;
-      font-size: .7rem; font-weight: 500; letter-spacing: .03em;
-      text-transform: uppercase; color: var(--text-dim);
-      display: flex; align-items: center; gap: .4rem;
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      padding: 0.25rem 0.6rem;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
+
     .video-wrap .badge .dot { width: 6px; height: 6px; }
 
+    /* ── Audio indicator (auto) ─────────────── */
     .audio-indicator {
-      display: flex; align-items: center; gap: .5rem;
-      font-size: .78rem; color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
     }
-    .audio-indicator.live { color: var(--success); }
 
+    .audio-indicator.live { color: var(--success); }
+    .audio-indicator.blocked { color: var(--danger); }
+
+    .level-meter {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 18px;
+    }
+
+    .level-meter span {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--surface-2);
+      transition: background 0.15s;
+    }
+
+    .level-meter.active span {
+      background: var(--success);
+      animation: level 0.9s ease-in-out infinite;
+    }
+
+    .level-meter.active span:nth-child(1) { animation-delay: 0.0s; }
+    .level-meter.active span:nth-child(2) { animation-delay: 0.1s; }
+    .level-meter.active span:nth-child(3) { animation-delay: 0.2s; }
+    .level-meter.active span:nth-child(4) { animation-delay: 0.3s; }
+    .level-meter.active span:nth-child(5) { animation-delay: 0.15s; }
+
+    @keyframes level {
+      0%, 100% { height: 4px; opacity: 0.4; }
+      50%      { height: 16px; opacity: 1; }
+    }
+
+    /* ── Locations ──────────────────────────── */
     #locations {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: .85rem;
+      gap: 0.85rem;
     }
+
     .loc {
-      display: grid; grid-template-columns: 1fr 160px; gap: .85rem;
-      padding: .85rem; background: var(--surface-2);
-      border: 1px solid var(--border); border-radius: 10px;
-      align-items: center; animation: fadeIn .4s ease;
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 0.85rem;
+      padding: 0.85rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      align-items: center;
+      animation: fadeIn 0.4s ease;
     }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-    .loc-info { display: flex; flex-direction: column; gap: .3rem; font-size: .86rem; }
-    .loc-ip { font-family: ui-monospace, monospace; color: var(--accent); font-size: .8rem; font-weight: 500; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .loc-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.86rem;
+      min-width: 0;
+    }
+
+    .loc-ip {
+      font-family: ui-monospace, monospace;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
     .loc-place { color: var(--text); font-weight: 500; }
+
     .loc-place.unavailable { color: var(--text-dim); font-style: italic; font-weight: 400; }
-    .loc-coords { color: var(--text-dim); font-size: .75rem; font-family: ui-monospace, monospace; }
-    .map { width: 160px; height: 110px; border: 1px solid var(--border); border-radius: 8px; }
-    .empty { text-align: center; color: var(--text-dim); padding: 1.25rem; font-size: .88rem; }
+
+    .loc-coords {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-family: ui-monospace, monospace;
+    }
+
+    .map {
+      width: 160px;
+      height: 110px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      filter: grayscale(20%) contrast(1.05);
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 1.25rem 1rem;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 500px) {
+      .loc { grid-template-columns: 1fr; }
+      .map { width: 100%; height: 140px; }
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <div class="brand-logo">P</div>
-    <div>
-      <h1>Proctoring Dashboard</h1>
-      <small>Live monitoring console — WebRTC</small>
-    </div>
-  </div>
-  <div style="display:flex; gap:.6rem; align-items:center;">
-    <div class="audio-indicator" id="audioIndicator">
-      <span id="audioStatus">Audio: connecting</span>
-    </div>
-    <div class="status-pill">
-      <span class="dot" id="connDot"></span>
-      <span id="connText">Connecting…</span>
-    </div>
-  </div>
-</header>
-
-<main>
-  <section class="panel area-cam">
-    <div class="panel-header">
-      <div class="panel-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-        Webcam Feed
+  <header>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <h1>Proctoring Dashboard</h1>
+        <small>Live monitoring console</small>
       </div>
     </div>
-    <div class="panel-body">
-      <div class="video-wrap">
-        <span class="badge"><span class="dot" id="camDot"></span>Camera</span>
-        <div class="placeholder" id="camPlaceholder">Waiting for client…</div>
-        <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+      <div class="audio-indicator" id="audioIndicator">
+        <div class="level-meter" id="levelMeter">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span id="audioStatus">Audio: waiting</span>
+      </div>
+      <div class="status-pill">
+        <span class="dot" id="connDot"></span>
+        <span id="connText">Connecting…</span>
       </div>
     </div>
-  </section>
+  </header>
 
-  <section class="panel area-screen">
-    <div class="panel-header">
-      <div class="panel-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Screen Share
+  <main>
+
+    <!-- ── Webcam (top left) ── -->
+    <section class="panel area-cam">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Webcam Feed
+        </div>
       </div>
-    </div>
-    <div class="panel-body">
-      <div class="video-wrap">
-        <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
-        <div class="placeholder" id="screenPlaceholder">Waiting for client…</div>
-        <video id="screen" autoplay playsinline muted style="display:none;"></video>
+      <div class="panel-body">
+        <div class="video-wrap">
+          <span class="badge"><span class="dot" id="camDot"></span>Camera</span>
+          <div class="placeholder" id="camPlaceholder">Waiting for client…</div>
+          <img id="webcam" alt="Webcam stream" style="display:none;">
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="panel area-locations">
-    <div class="panel-header">
-      <div class="panel-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Client Locations
+    <!-- ── Screen (top right) ── -->
+    <section class="panel area-screen">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Screen Share
+        </div>
       </div>
-    </div>
-    <div class="panel-body">
-      <div id="locations"><div class="empty">No clients connected yet.</div></div>
-    </div>
-  </section>
-</main>
+      <div class="panel-body">
+        <div class="video-wrap">
+          <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
+          <div class="placeholder" id="screenPlaceholder">Waiting for client…</div>
+          <img id="screen" alt="Screen stream" style="display:none;">
+        </div>
+      </div>
+    </section>
 
-<audio id="remoteAudio" autoplay></audio>
+    <!-- ── Locations (below, full width) ── -->
+    <section class="panel area-locations">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Client Locations
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="locations">
+          <div class="empty">No clients connected yet.</div>
+        </div>
+      </div>
+    </section>
 
-<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-<script>
-const socket = io();
+  </main>
 
-// ─── DOM ───
-const connDot        = document.getElementById('connDot');
-const connText       = document.getElementById('connText');
-const camDot         = document.getElementById('camDot');
-const screenDot      = document.getElementById('screenDot');
-const camPlaceholder = document.getElementById('camPlaceholder');
-const screenPlaceholder = document.getElementById('screenPlaceholder');
-const webcamEl       = document.getElementById('webcam');
-const screenEl       = document.getElementById('screen');
-const remoteAudio    = document.getElementById('remoteAudio');
-const audioStatus    = document.getElementById('audioStatus');
-const audioIndicator = document.getElementById('audioIndicator');
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    const socket = io();
 
-// ─── WebRTC ───
-let pc = null;
-let remoteSid = null;
-const pendingIce = [];
+    // ─────────── Connection indicator ───────────
+    const connDot  = document.getElementById('connDot');
+    const connText = document.getElementById('connText');
 
-function newPeer() {
-  const peer = new RTCPeerConnection({
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },   // Google public STUN only
-    ],
-  });
+    socket.on('connect', () => {
+      connDot.classList.add('live');
+      connDot.classList.remove('offline');
+      connText.textContent = 'Connected';
+    });
+    socket.on('disconnect', () => {
+      connDot.classList.remove('live');
+      connDot.classList.add('offline');
+      connText.textContent = 'Disconnected';
+    });
+    socket.on('connect_error', () => {
+      connDot.classList.remove('live');
+      connDot.classList.add('offline');
+      connText.textContent = 'Connection error';
+    });
 
-  // Receive only — one transceiver per expected track
-  peer.addTransceiver('video', { direction: 'recvonly' });
-  peer.addTransceiver('video', { direction: 'recvonly' });
-  peer.addTransceiver('audio', { direction: 'recvonly' });
+    // ─────────── Frame rendering helpers ───────────
+    function paintBytesFrame(imgEl, placeholderEl, dotEl, buf) {
+      // Socket.IO gives us an ArrayBuffer for binary events
+      const blob = buf instanceof Blob
+        ? buf
+        : new Blob([buf], { type: 'image/jpeg' });
 
-  peer.ontrack = (ev) => {
-    const stream = ev.streams[0];
-    const kind = ev.track.kind;
+      const url = URL.createObjectURL(blob);
+      const old = imgEl.src;
 
-    if (kind === 'audio') {
-      remoteAudio.srcObject = stream;
-      audioStatus.textContent = 'Audio: live';
-      audioIndicator.classList.add('live');
-      remoteAudio.play().catch(e => console.warn('audio play blocked:', e));
-      return;
+      imgEl.onload = () => {
+        // Revoke the previous blob URL after the new one loads
+        if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+      };
+      imgEl.src = url;
+
+      imgEl.style.display = 'block';
+      placeholderEl.style.display = 'none';
+      dotEl.classList.add('live');
     }
 
-    // Two video tracks arrive in the order they were added:
-    // 1st = webcam, 2nd = screen
-    if (!webcamEl.srcObject) {
-      webcamEl.srcObject = stream;
-      webcamEl.style.display = 'block';
-      camPlaceholder.style.display = 'none';
-      camDot.classList.add('live');
-      webcamEl.play().catch(() => {});
-    } else if (!screenEl.srcObject) {
-      screenEl.srcObject = stream;
-      screenEl.style.display = 'block';
-      screenPlaceholder.style.display = 'none';
-      screenDot.classList.add('live');
-      screenEl.play().catch(() => {});
+    function paintB64Frame(imgEl, placeholderEl, dotEl, b64) {
+      imgEl.src = 'data:image/jpeg;base64,' + b64;
+      imgEl.style.display = 'block';
+      placeholderEl.style.display = 'none';
+      dotEl.classList.add('live');
     }
-  };
 
-  peer.onicecandidate = (ev) => {
-    if (ev.candidate) {
-      socket.emit('webrtc_ice', {
-        target: remoteSid,
-        candidate: {
-          candidate: ev.candidate.candidate,
-          sdpMid: ev.candidate.sdpMid,
-          sdpMLineIndex: ev.candidate.sdpMLineIndex,
-        },
-      });
+    const webcamEl = document.getElementById('webcam');
+    const camPlaceholder = document.getElementById('camPlaceholder');
+    const camDot = document.getElementById('camDot');
+
+    const screenEl = document.getElementById('screen');
+    const screenPlaceholder = document.getElementById('screenPlaceholder');
+    const screenDot = document.getElementById('screenDot');
+
+    // ─────────── Webcam (binary) ───────────
+    socket.on('video_frame_bytes', buf => {
+      paintBytesFrame(webcamEl, camPlaceholder, camDot, buf);
+    });
+
+    // ─────────── Webcam (base64 fallback) ───────────
+    socket.on('video_frame', data => {
+      paintB64Frame(webcamEl, camPlaceholder, camDot, data);
+    });
+
+    // ─────────── Screen (binary) ───────────
+    socket.on('screen_frame_bytes', buf => {
+      paintBytesFrame(screenEl, screenPlaceholder, screenDot, buf);
+    });
+
+    // ─────────── Screen (base64 fallback) ───────────
+    socket.on('screen_frame', data => {
+      paintB64Frame(screenEl, screenPlaceholder, screenDot, data);
+    });
+
+    // ─────────── Live Audio (AUTO-START) ───────────
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+    const TARGET_LATENCY = 0.20;
+    let nextPlayTime = 0;
+
+    const audioStatusEl = document.getElementById('audioStatus');
+    const audioIndicator = document.getElementById('audioIndicator');
+    const levelMeter = document.getElementById('levelMeter');
+
+    async function tryAutostart() {
+      try {
+        await audioCtx.resume();
+        updateAudioUI();
+      } catch (e) {
+        audioStatusEl.textContent = 'Audio: click to enable';
+        audioIndicator.classList.add('blocked');
+      }
     }
-  };
 
-  peer.onconnectionstatechange = () => {
-    console.log('PC state:', peer.connectionState);
-    if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
-      camDot.classList.remove('live');
-      screenDot.classList.remove('live');
-      audioIndicator.classList.remove('live');
-      audioStatus.textContent = 'Audio: disconnected';
+    function updateAudioUI() {
+      if (audioCtx.state === 'running') {
+        audioStatusEl.textContent = 'Audio: live';
+        audioIndicator.classList.remove('blocked');
+        audioIndicator.classList.add('live');
+        levelMeter.classList.add('active');
+      } else {
+        audioStatusEl.textContent = 'Audio: click to enable';
+        audioIndicator.classList.remove('live');
+        audioIndicator.classList.add('blocked');
+        levelMeter.classList.remove('active');
+      }
     }
-  };
 
-  return peer;
-}
+    ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'].forEach(evt => {
+      window.addEventListener(evt, function once() {
+        if (audioCtx.state !== 'running') {
+          audioCtx.resume().then(updateAudioUI).catch(() => {});
+        }
+        if (audioCtx.state === 'running') {
+          window.removeEventListener(evt, once);
+        }
+      }, { passive: true });
+    });
 
-socket.on('connect', () => {
-  connDot.classList.add('live');
-  connDot.classList.remove('offline');
-  connText.textContent = 'Connected';
-  socket.emit('viewer_ready');
-});
+    tryAutostart();
 
-socket.on('disconnect', () => {
-  connDot.classList.remove('live');
-  connDot.classList.add('offline');
-  connText.textContent = 'Disconnected';
-});
+    socket.on('audio_data', msg => {
+      if (audioCtx.state !== 'running') return;
 
-socket.on('webrtc_offer', async ({ from, sdp }) => {
-  console.log('Offer received from', from);
-  remoteSid = from;
-  pc = newPeer();
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const bin = atob(msg.pcm);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-  while (pendingIce.length) {
-    try { await pc.addIceCandidate(pendingIce.shift()); } catch (e) {}
-  }
+      const int16 = new Int16Array(bytes.buffer);
+      const floats = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) floats[i] = int16[i] / 32768;
 
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
+      const buf = audioCtx.createBuffer(1, floats.length, msg.rate);
+      buf.copyToChannel(floats, 0);
 
-  socket.emit('webrtc_answer', {
-    target: remoteSid,
-    sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
-  });
-});
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
 
-socket.on('webrtc_ice', async ({ candidate }) => {
-  if (!pc || !pc.remoteDescription) {
-    pendingIce.push(candidate);
-    return;
-  }
-  try { await pc.addIceCandidate(candidate); } catch (e) { console.warn(e); }
-});
+      const now = audioCtx.currentTime;
+      if (nextPlayTime < now + 0.02) {
+        nextPlayTime = now + TARGET_LATENCY;
+      }
+      src.start(nextPlayTime);
+      nextPlayTime += buf.duration;
+    });
 
-// Autoplay: audio needs a user gesture. One click is enough.
-window.addEventListener('click', () => {
-  remoteAudio.play().catch(() => {});
-  audioStatus.textContent = 'Audio: live';
-  audioIndicator.classList.add('live');
-}, { once: true });
+    // ─────────── Location ───────────
+    const locationsEl = document.getElementById('locations');
+    let firstLoc = true;
 
-// ─── Location ───
-const locationsEl = document.getElementById('locations');
-let firstLoc = true;
+    socket.on('client_location', loc => {
+      if (firstLoc) {
+        locationsEl.innerHTML = '';
+        firstLoc = false;
+      }
 
-socket.on('client_location', loc => {
-  if (firstLoc) { locationsEl.innerHTML = ''; firstLoc = false; }
+      const div = document.createElement('div');
+      div.className = 'loc';
 
-  const div = document.createElement('div');
-  div.className = 'loc';
+      const info = document.createElement('div');
+      info.className = 'loc-info';
 
-  const info = document.createElement('div');
-  info.className = 'loc-info';
+      const ipEl = document.createElement('div');
+      ipEl.className = 'loc-ip';
+      ipEl.textContent = loc.ip || 'Unknown IP';
 
-  const ipEl = document.createElement('div');
-  ipEl.className = 'loc-ip';
-  ipEl.textContent = loc.ip || 'Unknown IP';
+      const placeEl = document.createElement('div');
+      const parts = [loc.city, loc.region, loc.country].filter(Boolean);
+      if (parts.length) {
+        placeEl.className = 'loc-place';
+        placeEl.textContent = parts.join(', ');
+      } else {
+        placeEl.className = 'loc-place unavailable';
+        placeEl.textContent = 'Location unavailable';
+      }
 
-  const placeEl = document.createElement('div');
-  const parts = [loc.city, loc.region, loc.country].filter(Boolean);
-  if (parts.length) {
-    placeEl.className = 'loc-place';
-    placeEl.textContent = parts.join(', ');
-  } else {
-    placeEl.className = 'loc-place unavailable';
-    placeEl.textContent = 'Location unavailable';
-  }
+      const coordsEl = document.createElement('div');
+      coordsEl.className = 'loc-coords';
+      if (loc.latitude && loc.longitude) {
+        coordsEl.textContent = `${(+loc.latitude).toFixed(4)}, ${(+loc.longitude).toFixed(4)}`;
+      }
 
-  info.appendChild(ipEl);
-  info.appendChild(placeEl);
+      info.appendChild(ipEl);
+      info.appendChild(placeEl);
+      if (coordsEl.textContent) info.appendChild(coordsEl);
 
-  if (loc.latitude && loc.longitude) {
-    const coordsEl = document.createElement('div');
-    coordsEl.className = 'loc-coords';
-    coordsEl.textContent = `${(+loc.latitude).toFixed(4)}, ${(+loc.longitude).toFixed(4)}`;
-    info.appendChild(coordsEl);
-  }
+      const iframe = document.createElement('iframe');
+      iframe.className = 'map';
+      iframe.loading = 'lazy';
+      // Google Maps can resolve both "lat,lon" and raw IP strings
+      const query = (loc.latitude && loc.longitude)
+        ? `${loc.latitude},${loc.longitude}`
+        : loc.ip;
+      iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=12&output=embed`;
 
-  const iframe = document.createElement('iframe');
-  iframe.className = 'map';
-  iframe.loading = 'lazy';
-  const q = (loc.latitude && loc.longitude) ? `${loc.latitude},${loc.longitude}` : loc.ip;
-  iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=12&output=embed`;
+      div.appendChild(info);
+      div.appendChild(iframe);
+      locationsEl.appendChild(div);
+    });
+  </script>
 
-  div.appendChild(info);
-  div.appendChild(iframe);
-  locationsEl.appendChild(div);
-});
-</script>
 </body>
 </html>
