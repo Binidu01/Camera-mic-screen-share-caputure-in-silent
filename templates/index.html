@@ -26,309 +26,137 @@
     * { box-sizing: border-box; }
 
     html, body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--text);
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      font-size: 15px;
-      line-height: 1.5;
-      min-height: 100vh;
+      font-size: 15px; line-height: 1.5; min-height: 100vh;
     }
 
-    /* ── Header ─────────────────────────────── */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      position: sticky; top: 0; z-index: 50;
       background: rgba(11, 15, 23, 0.85);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
       padding: 0.85rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
-
     .brand { display: flex; align-items: center; gap: 0.75rem; }
-
     .brand-logo {
-      width: 36px; height: 36px;
-      border-radius: 10px;
+      width: 36px; height: 36px; border-radius: 10px;
       background: linear-gradient(135deg, var(--accent), #7c5cff);
       display: grid; place-items: center;
       font-weight: 700; font-size: 17px;
       box-shadow: 0 0 24px var(--accent-glow);
     }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-    }
-    .brand small {
-      display: block;
-      color: var(--text-dim);
-      font-size: 0.72rem;
-      font-weight: 400;
-    }
+    .brand h1 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
+    .brand small { display: block; color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 
     .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.9rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      font-size: 0.8rem;
-      color: var(--text-dim);
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0.9rem; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 999px;
+      font-size: 0.8rem; color: var(--text-dim);
     }
-
     .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); transition: background 0.3s;
     }
-    .dot.live {
-      background: var(--success);
-      box-shadow: 0 0 10px var(--success);
-      animation: pulse 1.6s ease-in-out infinite;
-    }
+    .dot.live { background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 1.6s ease-in-out infinite; }
     .dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .6; transform: scale(.9); } }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: 0.6; transform: scale(0.9); }
-    }
-
-    /* ── Layout ─────────────────────────────── */
     main {
-      max-width: 1800px;
-      margin: 0 auto;
-      padding: 1.25rem 1.5rem 2rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-areas:
-        "cam       screen"
-        "locations locations";
+      max-width: 1800px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem;
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-template-areas: "cam screen" "locations locations";
       gap: 1.25rem;
     }
-
     @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "cam"
-          "screen"
-          "locations";
-        padding: 1rem;
-      }
+      main { grid-template-columns: 1fr; grid-template-areas: "cam" "screen" "locations"; padding: 1rem; }
     }
-
     .area-locations { grid-area: locations; }
     .area-cam       { grid-area: cam; }
     .area-screen    { grid-area: screen; }
 
-    /* ── Panels ─────────────────────────────── */
     .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden; display: flex; flex-direction: column; min-width: 0;
     }
-
     .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1.15rem;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--border);
       background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
     }
-
-    .panel-title {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-weight: 600;
-      font-size: 0.92rem;
-    }
-
+    .panel-title { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; font-size: 0.92rem; }
     .panel-title svg { width: 17px; height: 17px; color: var(--accent); }
+    .panel-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 
-    .panel-body {
-      padding: 1rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      min-width: 0;
-    }
-
-    /* ── Video frames (equal size) ──────────── */
     .video-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #05080e;
-      border-radius: 10px;
-      overflow: hidden;
+      position: relative; width: 100%; aspect-ratio: 16/9;
+      background: #05080e; border-radius: 10px; overflow: hidden;
       border: 1px solid var(--border);
     }
-
     .video-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-      background: #05080e;
+      width: 100%; height: 100%; object-fit: contain;
+      display: block; background: #05080e;
     }
-
     .video-wrap .placeholder {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      text-align: center;
-      padding: 1rem;
+      position: absolute; inset: 0; display: grid; place-items: center;
+      color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 1rem;
     }
-
     .video-wrap .badge {
-      position: absolute;
-      top: 0.6rem;
-      left: 0.6rem;
-      padding: 0.25rem 0.6rem;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(6px);
-      border-radius: 6px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      position: absolute; top: 0.6rem; left: 0.6rem;
+      padding: 0.25rem 0.6rem; background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px); border-radius: 6px;
+      font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em;
+      text-transform: uppercase; color: var(--text-dim);
+      display: flex; align-items: center; gap: 0.4rem;
     }
-
     .video-wrap .badge .dot { width: 6px; height: 6px; }
 
-    /* ── Audio indicator (auto) ─────────────── */
     .audio-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.78rem;
-      color: var(--text-dim);
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.78rem; color: var(--text-dim);
     }
-
     .audio-indicator.live { color: var(--success); }
     .audio-indicator.blocked { color: var(--danger); }
 
     .level-meter {
-      display: flex;
-      gap: 3px;
-      align-items: flex-end;
-      height: 18px;
+      display: flex; gap: 3px; align-items: flex-end; height: 18px;
     }
-
     .level-meter span {
-      width: 3px;
-      border-radius: 2px;
-      background: var(--surface-2);
-      transition: background 0.15s;
+      width: 3px; height: 4px; border-radius: 2px;
+      background: var(--surface-2); transition: height 0.08s, background 0.08s;
     }
+    .level-meter.active span { background: var(--success); }
 
-    .level-meter.active span {
-      background: var(--success);
-      animation: level 0.9s ease-in-out infinite;
-    }
-
-    .level-meter.active span:nth-child(1) { animation-delay: 0.0s; }
-    .level-meter.active span:nth-child(2) { animation-delay: 0.1s; }
-    .level-meter.active span:nth-child(3) { animation-delay: 0.2s; }
-    .level-meter.active span:nth-child(4) { animation-delay: 0.3s; }
-    .level-meter.active span:nth-child(5) { animation-delay: 0.15s; }
-
-    @keyframes level {
-      0%, 100% { height: 4px; opacity: 0.4; }
-      50%      { height: 16px; opacity: 1; }
-    }
-
-    /* ── Locations ──────────────────────────── */
     #locations {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 0.85rem;
     }
-
     .loc {
-      display: grid;
-      grid-template-columns: 1fr 160px;
-      gap: 0.85rem;
-      padding: 0.85rem;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      align-items: center;
-      animation: fadeIn 0.4s ease;
+      display: grid; grid-template-columns: 1fr 160px; gap: 0.85rem;
+      padding: 0.85rem; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 10px;
+      align-items: center; animation: fadeIn 0.4s ease;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .loc-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      font-size: 0.86rem;
-      min-width: 0;
-    }
-
-    .loc-ip {
-      font-family: ui-monospace, monospace;
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 500;
-    }
-
+    .loc-info { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.86rem; min-width: 0; }
+    .loc-ip { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.8rem; font-weight: 500; }
     .loc-place { color: var(--text); font-weight: 500; }
-
     .loc-place.unavailable { color: var(--text-dim); font-style: italic; font-weight: 400; }
-
-    .loc-coords {
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      font-family: ui-monospace, monospace;
-    }
+    .loc-coords { color: var(--text-dim); font-size: 0.75rem; font-family: ui-monospace, monospace; }
 
     .map {
-      width: 160px;
-      height: 110px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      width: 160px; height: 110px;
+      border: 1px solid var(--border); border-radius: 8px;
       filter: grayscale(20%) contrast(1.05);
     }
 
-    .empty {
-      text-align: center;
-      color: var(--text-dim);
-      padding: 1.25rem 1rem;
-      font-size: 0.88rem;
-    }
+    .empty { text-align: center; color: var(--text-dim); padding: 1.25rem 1rem; font-size: 0.88rem; }
 
     @media (max-width: 500px) {
       .loc { grid-template-columns: 1fr; }
@@ -361,8 +189,6 @@
   </header>
 
   <main>
-
-    <!-- ── Webcam (top left) ── -->
     <section class="panel area-cam">
       <div class="panel-header">
         <div class="panel-title">
@@ -379,7 +205,6 @@
       </div>
     </section>
 
-    <!-- ── Screen (top right) ── -->
     <section class="panel area-screen">
       <div class="panel-header">
         <div class="panel-title">
@@ -396,7 +221,6 @@
       </div>
     </section>
 
-    <!-- ── Locations (below, full width) ── -->
     <section class="panel area-locations">
       <div class="panel-header">
         <div class="panel-title">
@@ -410,59 +234,76 @@
         </div>
       </div>
     </section>
-
   </main>
 
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script>
-    const socket = io();
+    const socket = io({ transports: ['websocket'] });
 
     // ─────────── Connection indicator ───────────
     const connDot  = document.getElementById('connDot');
     const connText = document.getElementById('connText');
 
     socket.on('connect', () => {
-      connDot.classList.add('live');
-      connDot.classList.remove('offline');
+      connDot.classList.add('live'); connDot.classList.remove('offline');
       connText.textContent = 'Connected';
     });
     socket.on('disconnect', () => {
-      connDot.classList.remove('live');
-      connDot.classList.add('offline');
+      connDot.classList.remove('live'); connDot.classList.add('offline');
       connText.textContent = 'Disconnected';
     });
     socket.on('connect_error', () => {
-      connDot.classList.remove('live');
-      connDot.classList.add('offline');
+      connDot.classList.remove('live'); connDot.classList.add('offline');
       connText.textContent = 'Connection error';
     });
 
-    // ─────────── Frame rendering helpers ───────────
-    function paintBytesFrame(imgEl, placeholderEl, dotEl, buf) {
-      // Socket.IO gives us an ArrayBuffer for binary events
-      const blob = buf instanceof Blob
-        ? buf
-        : new Blob([buf], { type: 'image/jpeg' });
+    // ─────────── Video frame rendering ───────────
+    // Per-image "latest wins" logic: if a new frame arrives before the
+    // previous one finished decoding, we drop the intermediate one.
+    // This is essential at 12+ fps on slower clients — otherwise the
+    // browser queues frames and playback drifts behind real time.
+    function makeFramePump(imgEl, placeholderEl, dotEl, kind) {
+      let pendingBuf = null;
+      let decoding = false;
+      let currentUrl = null;
 
-      const url = URL.createObjectURL(blob);
-      const old = imgEl.src;
+      function decodeNext() {
+        if (decoding || pendingBuf === null) return;
+        decoding = true;
+        const buf = pendingBuf;
+        pendingBuf = null;
 
-      imgEl.onload = () => {
-        // Revoke the previous blob URL after the new one loads
-        if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+        const blob = buf instanceof Blob ? buf : new Blob([buf], { type: 'image/jpeg' });
+        const url = URL.createObjectURL(blob);
+
+        imgEl.onload = () => {
+          const old = currentUrl;
+          currentUrl = url;
+          if (old) URL.revokeObjectURL(old);
+          decoding = false;
+          if (pendingBuf !== null) decodeNext();
+        };
+        imgEl.onerror = () => {
+          URL.revokeObjectURL(url);
+          decoding = false;
+          if (pendingBuf !== null) decodeNext();
+        };
+        imgEl.src = url;
+
+        imgEl.style.display = 'block';
+        placeholderEl.style.display = 'none';
+        dotEl.classList.add('live');
+      }
+
+      return {
+        pushBinary(buf) { pendingBuf = buf; decodeNext(); },
+        pushBase64(b64) {
+          imgEl.src = 'data:image/jpeg;base64,' + b64;
+          imgEl.style.display = 'block';
+          placeholderEl.style.display = 'none';
+          dotEl.classList.add('live');
+        },
       };
-      imgEl.src = url;
-
-      imgEl.style.display = 'block';
-      placeholderEl.style.display = 'none';
-      dotEl.classList.add('live');
-    }
-
-    function paintB64Frame(imgEl, placeholderEl, dotEl, b64) {
-      imgEl.src = 'data:image/jpeg;base64,' + b64;
-      imgEl.style.display = 'block';
-      placeholderEl.style.display = 'none';
-      dotEl.classList.add('live');
     }
 
     const webcamEl = document.getElementById('webcam');
@@ -473,47 +314,121 @@
     const screenPlaceholder = document.getElementById('screenPlaceholder');
     const screenDot = document.getElementById('screenDot');
 
-    // ─────────── Webcam (binary) ───────────
-    socket.on('video_frame_bytes', buf => {
-      paintBytesFrame(webcamEl, camPlaceholder, camDot, buf);
-    });
+    const camPump = makeFramePump(webcamEl, camPlaceholder, camDot, 'cam');
+    const screenPump = makeFramePump(screenEl, screenPlaceholder, screenDot, 'screen');
 
-    // ─────────── Webcam (base64 fallback) ───────────
-    socket.on('video_frame', data => {
-      paintB64Frame(webcamEl, camPlaceholder, camDot, data);
-    });
+    socket.on('video_frame_bytes',  buf => camPump.pushBinary(buf));
+    socket.on('video_frame',        b64 => camPump.pushBase64(b64));
+    socket.on('screen_frame_bytes', buf => screenPump.pushBinary(buf));
+    socket.on('screen_frame',       b64 => screenPump.pushBase64(b64));
 
-    // ─────────── Screen (binary) ───────────
-    socket.on('screen_frame_bytes', buf => {
-      paintBytesFrame(screenEl, screenPlaceholder, screenDot, buf);
-    });
-
-    // ─────────── Screen (base64 fallback) ───────────
-    socket.on('screen_frame', data => {
-      paintB64Frame(screenEl, screenPlaceholder, screenDot, data);
-    });
-
-    // ─────────── Live Audio (AUTO-START) ───────────
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-    const TARGET_LATENCY = 0.20;
-    let nextPlayTime = 0;
-
+    // ─────────── Live Audio (AudioWorklet, low latency) ───────────
     const audioStatusEl = document.getElementById('audioStatus');
     const audioIndicator = document.getElementById('audioIndicator');
     const levelMeter = document.getElementById('levelMeter');
+    const meterBars = levelMeter.querySelectorAll('span');
 
-    async function tryAutostart() {
+    let audioCtx = null;
+    let workletNode = null;
+    let analyser = null;
+    let audioReady = false;
+
+    const SAMPLE_RATE = 48000;
+
+    // Inline worklet — avoids a separate .js file and any extra HTTP fetch.
+    const workletSrc = `
+      class PCMPlayer extends AudioWorkletProcessor {
+        constructor() {
+          super();
+          this.queue = [];
+          this.offset = 0;
+          this.port.onmessage = (e) => {
+            const f32 = e.data;
+            this.queue.push(f32);
+            // Keep at most ~250 ms of backlog; drop oldest on overflow.
+            let total = 0;
+            for (let i = 0; i < this.queue.length; i++) total += this.queue[i].length;
+            while (total > 12000 && this.queue.length > 1) {
+              total -= this.queue.shift().length;
+            }
+          };
+        }
+        process(inputs, outputs) {
+          const out = outputs[0][0];
+          let i = 0;
+          while (i < out.length) {
+            if (this.queue.length === 0) { out[i++] = 0; continue; }
+            const cur = this.queue[0];
+            const remain = cur.length - this.offset;
+            const need = out.length - i;
+            const n = Math.min(remain, need);
+            out.set(cur.subarray(this.offset, this.offset + n), i);
+            i += n;
+            this.offset += n;
+            if (this.offset >= cur.length) { this.queue.shift(); this.offset = 0; }
+          }
+          return true;
+        }
+      }
+      registerProcessor('pcm-player', PCMPlayer);
+    `;
+
+    async function ensureAudio() {
+      if (audioReady) return;
+      audioReady = true;
       try {
-        await audioCtx.resume();
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: SAMPLE_RATE,
+          latencyHint: 'interactive',
+        });
+
+        const blob = new Blob([workletSrc], { type: 'application/javascript' });
+        const url  = URL.createObjectURL(blob);
+        await audioCtx.audioWorklet.addModule(url);
+        URL.revokeObjectURL(url);
+
+        workletNode = new AudioWorkletNode(audioCtx, 'pcm-player');
+
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+
+        workletNode.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        // Level meter loop
+        const tmp = new Uint8Array(analyser.fftSize);
+        function drawMeter() {
+          if (audioCtx && audioCtx.state === 'running') {
+            analyser.getByteTimeDomainData(tmp);
+            let sum = 0;
+            for (let i = 0; i < tmp.length; i++) {
+              const v = (tmp[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / tmp.length);       // 0..~1
+            const db  = 20 * Math.log10(rms + 1e-6);        // ~ -120..0
+            // Map -60..0 dB to 0..5 bars
+            const active = Math.max(0, Math.min(meterBars.length,
+              Math.round(((db + 60) / 60) * meterBars.length)));
+            meterBars.forEach((b, idx) => {
+              b.style.height = (idx < active ? 16 : 4) + 'px';
+              b.style.background = idx < active ? 'var(--success)' : 'var(--surface-2)';
+            });
+          }
+          requestAnimationFrame(drawMeter);
+        }
+        drawMeter();
+
         updateAudioUI();
       } catch (e) {
-        audioStatusEl.textContent = 'Audio: click to enable';
-        audioIndicator.classList.add('blocked');
+        console.error('Audio init failed', e);
+        audioReady = false;
+        audioStatusEl.textContent = 'Audio: unavailable';
       }
     }
 
     function updateAudioUI() {
-      if (audioCtx.state === 'running') {
+      if (audioCtx && audioCtx.state === 'running') {
         audioStatusEl.textContent = 'Audio: live';
         audioIndicator.classList.remove('blocked');
         audioIndicator.classList.add('live');
@@ -526,57 +441,78 @@
       }
     }
 
-    ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'].forEach(evt => {
-      window.addEventListener(evt, function once() {
-        if (audioCtx.state !== 'running') {
-          audioCtx.resume().then(updateAudioUI).catch(() => {});
+    // Try to autostart. Browsers block AudioContext until a user gesture,
+    // so hook every reasonable gesture and remove each listener once it fires.
+    async function tryResume() {
+      await ensureAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch (_) {}
+      }
+      updateAudioUI();
+    }
+
+    ['click','touchstart','keydown','scroll','mousemove','pointerdown'].forEach(evt => {
+      const handler = () => {
+        tryResume();
+        if (audioCtx && audioCtx.state === 'running') {
+          ['click','touchstart','keydown','scroll','mousemove','pointerdown']
+            .forEach(e => window.removeEventListener(e, handler));
         }
-        if (audioCtx.state === 'running') {
-          window.removeEventListener(evt, once);
-        }
-      }, { passive: true });
+      };
+      window.addEventListener(evt, handler, { passive: true });
     });
 
-    tryAutostart();
+    // Kick off immediately; if the browser already trusts the page
+    // (e.g. media engagement index is high), this will succeed silently.
+    tryResume();
 
-    socket.on('audio_data', msg => {
-      if (audioCtx.state !== 'running') return;
+    // ─────────── Audio ingest ───────────
+    function pcm16ToFloat32(buf) {
+      const i16 = new Int16Array(buf);
+      const f32 = new Float32Array(i16.length);
+      for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768;
+      return f32;
+    }
 
+    // New binary path
+    socket.on('audio_bytes', async (data) => {
+      await ensureAudio();
+      if (!audioCtx || audioCtx.state !== 'running') return;
+      const buf = data instanceof ArrayBuffer ? data : new Uint8Array(data).buffer;
+      workletNode.port.postMessage(pcm16ToFloat32(buf), []);
+    });
+
+    // Legacy base64 path (kept so nothing breaks if server still sends it)
+    socket.on('audio_data', async (msg) => {
+      await ensureAudio();
+      if (!audioCtx || audioCtx.state !== 'running') return;
       const bin = atob(msg.pcm);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-
-      const int16 = new Int16Array(bytes.buffer);
-      const floats = new Float32Array(int16.length);
-      for (let i = 0; i < int16.length; i++) floats[i] = int16[i] / 32768;
-
-      const buf = audioCtx.createBuffer(1, floats.length, msg.rate);
-      buf.copyToChannel(floats, 0);
-
-      const src = audioCtx.createBufferSource();
-      src.buffer = buf;
-      src.connect(audioCtx.destination);
-
-      const now = audioCtx.currentTime;
-      if (nextPlayTime < now + 0.02) {
-        nextPlayTime = now + TARGET_LATENCY;
-      }
-      src.start(nextPlayTime);
-      nextPlayTime += buf.duration;
+      workletNode.port.postMessage(pcm16ToFloat32(bytes.buffer), []);
     });
 
     // ─────────── Location ───────────
     const locationsEl = document.getElementById('locations');
     let firstLoc = true;
+    const seenIPs = new Set();
 
     socket.on('client_location', loc => {
-      if (firstLoc) {
-        locationsEl.innerHTML = '';
-        firstLoc = false;
+      if (firstLoc) { locationsEl.innerHTML = ''; firstLoc = false; }
+
+      // De-duplicate: if we've already shown this IP, update it instead
+      // of appending a duplicate card on every reconnect.
+      const key = loc.ip || 'unknown';
+      if (seenIPs.has(key)) {
+        const existing = document.querySelector(`.loc[data-ip="${CSS.escape(key)}"]`);
+        if (existing) existing.remove();
       }
+      seenIPs.add(key);
 
       const div = document.createElement('div');
       div.className = 'loc';
+      div.dataset.ip = key;
 
       const info = document.createElement('div');
       info.className = 'loc-info';
@@ -608,7 +544,6 @@
       const iframe = document.createElement('iframe');
       iframe.className = 'map';
       iframe.loading = 'lazy';
-      // Google Maps can resolve both "lat,lon" and raw IP strings
       const query = (loc.latitude && loc.longitude)
         ? `${loc.latitude},${loc.longitude}`
         : loc.ip;
