@@ -1,15 +1,10 @@
+# .github/workflows/release.yml
 name: Build and Release Client
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag name for the release (e.g., v1.0.0)'
-        required: true
-        default: 'v0.0.0-manual'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -21,6 +16,31 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version tag
+        id: version
+        shell: bash
+        run: |
+          # Get the latest v* tag sorted by version, or empty if none exist
+          LATEST=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+
+          if [ -z "$LATEST" ]; then
+            NEXT="v1.0.0"
+          else
+            # Strip leading 'v' and split into major.minor.patch
+            VER="${LATEST#v}"
+            MAJOR=$(echo "$VER" | cut -d. -f1)
+            MINOR=$(echo "$VER" | cut -d. -f2)
+            PATCH=$(echo "$VER" | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            NEXT="v${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          echo "Latest tag: $LATEST"
+          echo "Next tag:   $NEXT"
+          echo "tag=$NEXT" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,8 +66,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           files: dist/client.exe
           generate_release_notes: true
           draft: false
