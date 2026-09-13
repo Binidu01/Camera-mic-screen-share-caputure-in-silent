@@ -1,5 +1,6 @@
 import asyncio
 import os
+import pathlib
 import platform
 import queue
 import re
@@ -19,47 +20,67 @@ from livekit import rtc
 
 # --- CONFIG ---
 TOKEN_URL = 'https://camera-mic-screen-share-caputure-in.onrender.com/token'
-DEBUG_TIMING = False   # set True to re-enable per-frame timing logs
+DEBUG_TIMING = False
 
 
 # ─────────────────────────────────────────────────────────────
-#  STUDENT IDENTITY  —  derived from the PC itself
+#  STUDENT IDENTITY  —  persisted to disk so restarts reuse it
 # ─────────────────────────────────────────────────────────────
 def make_student_id():
     """
-    Build a stable, DNS-safe ID from the machine.
-    Format: <hostname>-<short-hash>
-    Example: DESKTOP-A1B2C3-4f9a2c
+    Deterministic ID persisted to disk so restarts never create a
+    new room. Format: <hostname>-<short-hash>
     """
+    # Where to remember our ID (survives restarts)
+    try:
+        home = pathlib.Path.home()
+    except Exception:
+        home = pathlib.Path(os.getcwd())
+    cache_file = home / '.livekit_student_id'
+
+    # Reuse saved ID if present
+    if cache_file.exists():
+        try:
+            saved = cache_file.read_text().strip()
+            if saved:
+                return saved
+        except Exception:
+            pass
+
+    # Generate a fresh one
     try:
         hostname = socket.gethostname()
     except Exception:
         hostname = platform.node() or 'unknown'
 
-    # Strip anything that isn't a letter, digit, or dash
     hostname = re.sub(r'[^A-Za-z0-9-]', '-', hostname).strip('-')
     if not hostname:
         hostname = 'pc'
 
-    # Short hash of hostname + MAC for uniqueness across duplicate hostnames
     try:
         mac = uuid.getnode()
     except Exception:
         mac = 0
     h = format(abs(hash(f"{hostname}-{mac}")) % (16**6), '06x')
 
-    return f"{hostname}-{h}"
+    new_id = f"{hostname}-{h}"
+
+    # Persist for next run
+    try:
+        cache_file.write_text(new_id)
+        print(f"Generated new student ID (saved to {cache_file}): {new_id}")
+    except Exception as e:
+        print(f"Warning: couldn't save student ID to {cache_file}: {e}")
+
+    return new_id
 
 
-# Allow override via env var (e.g. STUDENT_NAME=Alice python client.py)
 STUDENT_ID = os.environ.get('STUDENT_NAME') or make_student_id()
 ROOM_NAME  = f"student-{STUDENT_ID}"
 IDENTITY   = f"publisher-{STUDENT_ID}"
 
-# Global shutdown flag
 STOP = threading.Event()
 
-# Shared resources for shutdown
 _cap = None
 _audio_stream = None
 _room = None
@@ -75,7 +96,6 @@ def log(msg):
 #  TOKEN
 # ─────────────────────────────────────────────────────────────
 def get_livekit_credentials(identity, room):
-    """Fetch a LiveKit JWT + URL from the Render token server."""
     resp = requests.post(
         TOKEN_URL,
         json={'identity': identity, 'room': room},
@@ -86,7 +106,7 @@ def get_livekit_credentials(identity, room):
 
 
 # ─────────────────────────────────────────────────────────────
-#  WEBCAM  —  publishes a video track to LiveKit
+#  WEBCAM
 # ─────────────────────────────────────────────────────────────
 def open_webcam():
     backends = []
@@ -114,10 +134,9 @@ async def publish_webcam(room):
     _cap = cap
 
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    # Warm up — first frame from DSHOW is slow
     ret, frame = await asyncio.to_thread(cap.read)
     if not ret:
         print("Webcam first-frame read failed")
@@ -130,10 +149,12 @@ async def publish_webcam(room):
     track = rtc.LocalVideoTrack.create_video_track("webcam", source)
     options = rtc.TrackPublishOptions()
     options.source = rtc.TrackSource.SOURCE_CAMERA
+    options.video_encoding.max_bitrate = 1_200_000
+    options.video_encoding.max_framerate = 15
     await room.local_participant.publish_track(track, options)
     print("Webcam track published")
 
-    TARGET_FPS = 10
+    TARGET_FPS = 15
     FRAME_TIME = 1.0 / TARGET_FPS
 
     while not STOP.is_set():
@@ -174,7 +195,7 @@ async def publish_webcam(room):
 
 
 # ─────────────────────────────────────────────────────────────
-#  SCREEN  —  publishes a video track to LiveKit
+#  SCREEN  —  full HD, high bitrate, screen-optimized
 # ─────────────────────────────────────────────────────────────
 def _make_mss():
     if hasattr(mss, 'MSS'):
@@ -183,24 +204,25 @@ def _make_mss():
 
 
 async def publish_screen(room):
-    TARGET_FPS = 4
+    TARGET_FPS = 8
     FRAME_TIME = 1.0 / TARGET_FPS
+    TARGET_W, TARGET_H = 1920, 1080
 
     with _make_mss() as sct:
         monitor = sct.monitors[1]
 
-        # Grab one frame to learn dimensions
         shot = await asyncio.to_thread(sct.grab, monitor)
         frame = np.array(shot)[:, :, :3]
-        small = cv2.resize(frame, (480, 270))
+        small = cv2.resize(frame, (TARGET_W, TARGET_H))
         height, width, _ = small.shape
         print(f"Screen resolution: {width}x{height}")
 
-        # is_screencast=True tells LiveKit to optimize for screen content
         source = rtc.VideoSource(width, height, is_screencast=True)
         track = rtc.LocalVideoTrack.create_video_track("screen", source)
         options = rtc.TrackPublishOptions()
         options.source = rtc.TrackSource.SOURCE_SCREENSHARE
+        options.video_encoding.max_bitrate = 6_000_000
+        options.video_encoding.max_framerate = TARGET_FPS
         await room.local_participant.publish_track(track, options)
         print("Screen track published")
 
@@ -241,7 +263,7 @@ async def publish_screen(room):
 
 
 # ─────────────────────────────────────────────────────────────
-#  AUDIO  —  publishes an audio track to LiveKit
+#  AUDIO
 # ─────────────────────────────────────────────────────────────
 audio_q = queue.Queue(maxsize=4)
 
@@ -262,7 +284,6 @@ async def publish_audio(room):
         try:
             audio_q.put_nowait(indata.copy())
         except queue.Full:
-            # Drop-newest: discard the incoming chunk, keep queued audio.
             with stats_lock:
                 stats['dropped'] += 1
 
@@ -282,7 +303,6 @@ async def publish_audio(room):
         print("Mic open failed:", e)
         return
 
-    # Create the LiveKit audio source
     source = rtc.AudioSource(FR, CH)
     track = rtc.LocalAudioTrack.create_audio_track("mic", source)
     options = rtc.TrackPublishOptions()
@@ -296,7 +316,7 @@ async def publish_audio(room):
         except queue.Empty:
             continue
 
-        samples = chunk.flatten()  # 1D int16 array
+        samples = chunk.flatten()
         frame = rtc.AudioFrame.create(FR, CH, len(samples))
         np.copyto(np.frombuffer(frame.data, dtype=np.int16), samples)
         await source.capture_frame(frame)
@@ -360,14 +380,12 @@ async def run_publisher():
     await room.connect(creds['url'], creds['token'])
     print(f"Connected to LiveKit room: {room.name}")
 
-    # Publish all three tracks concurrently
     await asyncio.gather(
         publish_webcam(room),
         publish_screen(room),
         publish_audio(room),
     )
 
-    # Clean disconnect when all publishers finish
     try:
         await room.disconnect()
         print("LiveKit disconnected")
