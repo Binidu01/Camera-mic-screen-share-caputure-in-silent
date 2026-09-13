@@ -24,7 +24,6 @@
     }
 
     * { box-sizing: border-box; }
-
     html, body {
       margin: 0; padding: 0;
       background: var(--bg); color: var(--text);
@@ -52,6 +51,14 @@
     .brand h1 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
     .brand small { display: block; color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 
+    /* ─── Header right side: hidden on page 1, shown on page 2 ─── */
+    .header-tools {
+      display: none;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    body.viewing .header-tools { display: flex; }
+
     .status-pill {
       display: inline-flex; align-items: center; gap: 0.5rem;
       padding: 0.4rem 0.9rem; background: var(--surface);
@@ -66,68 +73,241 @@
     .dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
     @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .6; transform: scale(.9); } }
 
-    main {
-      max-width: 1800px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem;
-      display: grid; grid-template-columns: 1fr 1fr;
-      grid-template-areas: "cam screen";
-      gap: 1.25rem;
-    }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; grid-template-areas: "cam" "screen"; padding: 1rem; }
-    }
-    .area-cam    { grid-area: cam; }
-    .area-screen { grid-area: screen; }
-
-    .panel {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow);
-      overflow: hidden; display: flex; flex-direction: column; min-width: 0;
-    }
-    .panel-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-    }
-    .panel-title { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; font-size: 0.92rem; }
-    .panel-title svg { width: 17px; height: 17px; color: var(--accent); }
-    .panel-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-
-    .video-wrap {
-      position: relative; width: 100%; aspect-ratio: 16/9;
-      background: #05080e; border-radius: 10px; overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .video-wrap video {
-      width: 100%; height: 100%; object-fit: contain;
-      display: block; background: #05080e;
-    }
-    .video-wrap .placeholder {
-      position: absolute; inset: 0; display: grid; place-items: center;
-      color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 1rem;
-    }
-    .video-wrap .badge {
-      position: absolute; top: 0.6rem; left: 0.6rem;
-      padding: 0.25rem 0.6rem; background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(6px); border-radius: 6px;
-      font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em;
-      text-transform: uppercase; color: var(--text-dim);
-      display: flex; align-items: center; gap: 0.4rem;
-    }
-    .video-wrap .badge .dot { width: 6px; height: 6px; }
-
     .audio-indicator {
       display: flex; align-items: center; gap: 0.5rem;
       font-size: 0.78rem; color: var(--text-dim);
     }
     .audio-indicator.live { color: var(--success); }
-    .audio-indicator.blocked { color: var(--danger); }
-
     .level-meter { display: flex; gap: 3px; align-items: flex-end; height: 18px; }
     .level-meter span {
       width: 3px; height: 4px; border-radius: 2px;
       background: var(--surface-2); transition: height 0.08s, background 0.08s;
     }
     .level-meter.active span { background: var(--success); }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ─── Page 1: student list ─── */
+    .list-page {
+      max-width: 1400px; margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+    }
+    .list-hero { text-align: center; margin-bottom: 2rem; }
+    .list-hero h1 {
+      margin: 0 0 0.5rem; font-size: 1.9rem; font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .list-hero p { margin: 0; color: var(--text-dim); font-size: 0.95rem; }
+
+    .list-toolbar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
+    .search-wrap svg {
+      position: absolute; left: 0.85rem; top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--text-dim);
+      pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 0.9rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--text-dim); }
+
+    .refresh-btn {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.7rem 1rem;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px;
+      font-size: 0.85rem; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); background: var(--surface-2); }
+    .refresh-btn svg { width: 15px; height: 15px; }
+
+    .students-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .student-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 0.85rem;
+      position: relative; overflow: hidden;
+    }
+    .student-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(79,140,255,0.06), transparent 60%);
+      opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .student-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px rgba(79,140,255,0.18);
+    }
+    .student-card:hover::before { opacity: 1; }
+
+    .card-top { display: flex; align-items: flex-start; gap: 0.85rem; }
+    .card-avatar {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #7c5cff);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 1rem;
+      color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .card-info { min-width: 0; flex: 1; }
+    .card-name {
+      font-weight: 600; font-size: 0.95rem;
+      margin-bottom: 0.15rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .card-room {
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem; color: var(--text-dim);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .card-bottom { display: flex; align-items: center; justify-content: space-between; }
+    .card-status {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.75rem; color: var(--success); font-weight: 500;
+    }
+    .card-status .dot { width: 7px; height: 7px; }
+    .card-participants {
+      font-size: 0.75rem; color: var(--text-dim);
+      background: var(--surface-2);
+      padding: 2px 9px; border-radius: 999px;
+    }
+    .card-cta {
+      display: flex; align-items: center; gap: 0.35rem;
+      font-size: 0.8rem; color: var(--accent); font-weight: 500;
+      margin-top: 0.15rem;
+    }
+    .card-cta svg { width: 13px; height: 13px; }
+
+    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-dim); }
+    .empty-state svg { width: 56px; height: 56px; margin-bottom: 1rem; opacity: 0.4; }
+    .empty-state h3 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--text); }
+    .empty-state p { margin: 0; font-size: 0.88rem; }
+
+    /* ─── Page 2: live view ─── */
+    .view-page { padding: 1rem 1.5rem 1.5rem; }
+    .view-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px;
+      font-size: 0.85rem; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .back-btn:hover { border-color: var(--accent); background: var(--surface-2); }
+    .back-btn svg { width: 15px; height: 15px; }
+
+    .view-title {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.95rem; font-weight: 600; min-width: 0;
+    }
+    .view-title .view-label { color: var(--text-dim); font-weight: 400; }
+    .view-title .view-name {
+      color: var(--accent);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 40ch;
+    }
+
+    .stage {
+      position: relative;
+      height: calc(100vh - 210px);
+      min-height: 380px;
+      background: #05080e;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .stage .screen-video {
+      width: 100%; height: 100%;
+      object-fit: contain; background: #05080e; display: block;
+    }
+    .stage .placeholder {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      color: var(--text-dim); font-size: 0.95rem;
+      text-align: center; padding: 1rem;
+    }
+    .stage .badge {
+      position: absolute; top: 0.75rem; left: 0.75rem;
+      padding: 0.3rem 0.7rem; background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px); border-radius: 8px;
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.03em;
+      text-transform: uppercase; color: var(--text-dim);
+      display: flex; align-items: center; gap: 0.4rem;
+      pointer-events: none;
+    }
+    .stage .badge .dot { width: 6px; height: 6px; }
+
+    .pip {
+      position: absolute;
+      right: 1rem; bottom: 1rem;
+      width: 240px; aspect-ratio: 4 / 3;
+      background: #000;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      cursor: grab;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .pip:hover { border-color: var(--accent); }
+    .pip.dragging { cursor: grabbing; box-shadow: 0 12px 32px rgba(0,0,0,0.7); }
+    .pip video {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      background: #000; pointer-events: none;
+    }
+    .pip .pip-placeholder {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      color: var(--text-dim); font-size: 0.72rem;
+      text-align: center; padding: 0.5rem;
+    }
+    .pip .pip-badge {
+      position: absolute; top: 0.4rem; left: 0.4rem;
+      padding: 0.2rem 0.5rem; background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px); border-radius: 6px;
+      font-size: 0.62rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.03em;
+      color: var(--text-dim);
+      display: flex; align-items: center; gap: 0.35rem;
+      pointer-events: none;
+    }
+    .pip .pip-badge .dot { width: 6px; height: 6px; }
+
+    @media (max-width: 700px) {
+      .pip { width: 140px; right: 0.6rem; bottom: 0.6rem; }
+      .stage { height: calc(100vh - 230px); }
+      .list-hero h1 { font-size: 1.5rem; }
+      .view-page { padding: 0.75rem; }
+    }
   </style>
 </head>
 <body>
@@ -140,74 +320,93 @@
         <small>Live monitoring console</small>
       </div>
     </div>
-    <div style="display:flex; gap:0.6rem; align-items:center;">
+
+    <!-- Hidden on page 1, shown on page 2 via body.viewing -->
+    <div class="header-tools">
       <div class="audio-indicator" id="audioIndicator">
         <div class="level-meter" id="levelMeter">
           <span></span><span></span><span></span><span></span><span></span>
         </div>
-        <span id="audioStatus">Audio: waiting</span>
+        <span id="audioStatus">Audio: ready</span>
       </div>
       <div class="status-pill">
         <span class="dot" id="connDot"></span>
-        <span id="connText">Connecting…</span>
+        <span id="connText">Ready</span>
       </div>
     </div>
   </header>
 
-  <main>
-    <section class="panel area-cam">
-      <div class="panel-header">
-        <div class="panel-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          Webcam Feed
+  <!-- ─── Page 1: student list ─── -->
+  <div class="page active" id="pageList">
+    <div class="list-page">
+      <div class="list-hero">
+        <h1>Active Students</h1>
+        <p>Click a student to start monitoring their session</p>
+      </div>
+
+      <div class="list-toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="searchInput" type="text" placeholder="Search by PC name…" />
+        </div>
+        <button class="refresh-btn" id="refreshBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="students-grid" id="studentsGrid">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <h3>Scanning for students…</h3>
+          <p>Student clients appear here as soon as they connect</p>
         </div>
       </div>
-      <div class="panel-body">
-        <div class="video-wrap">
-          <span class="badge"><span class="dot" id="camDot"></span>Camera</span>
-          <div class="placeholder" id="camPlaceholder">Waiting for client…</div>
+    </div>
+  </div>
+
+  <!-- ─── Page 2: live view ─── -->
+  <div class="page" id="pageView">
+    <div class="view-page">
+      <div class="view-toolbar">
+        <button class="back-btn" id="backBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to students
+        </button>
+        <div class="view-title">
+          <span class="view-label">Watching:</span>
+          <span class="view-name" id="viewName">—</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
+        <div class="placeholder" id="screenPlaceholder">Connecting to student…</div>
+        <video id="screen" class="screen-video" autoplay playsinline muted style="display:none;"></video>
+
+        <div class="pip" id="pip">
+          <span class="pip-badge"><span class="dot" id="camDot"></span>Camera</span>
+          <div class="pip-placeholder" id="camPlaceholder">No camera</div>
           <video id="webcam" autoplay playsinline muted style="display:none;"></video>
         </div>
       </div>
-    </section>
-
-    <section class="panel area-screen">
-      <div class="panel-header">
-        <div class="panel-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Screen Share
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="video-wrap">
-          <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
-          <div class="placeholder" id="screenPlaceholder">Waiting for client…</div>
-          <video id="screen" autoplay playsinline muted style="display:none;"></video>
-        </div>
-      </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
   <script>
-    // ─────────── Connection indicator ───────────
-    const connDot  = document.getElementById('connDot');
+    const MY_IDENTITY = 'proctor-' + Math.random().toString(36).slice(2, 10);
+
+    const pageList = document.getElementById('pageList');
+    const pageView = document.getElementById('pageView');
+    const studentsGrid = document.getElementById('studentsGrid');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const backBtn = document.getElementById('backBtn');
+    const viewName = document.getElementById('viewName');
+
+    const connDot = document.getElementById('connDot');
     const connText = document.getElementById('connText');
-
-    function setConnected() {
-      connDot.classList.add('live'); connDot.classList.remove('offline');
-      connText.textContent = 'Connected';
-    }
-    function setDisconnected(msg) {
-      connDot.classList.remove('live'); connDot.classList.add('offline');
-      connText.textContent = msg || 'Disconnected';
-    }
-
-    // ─────────── LiveKit room ───────────
-    const room = new LivekitClient.Room({
-      adaptiveStream: true,
-      dynacast: true,
-    });
 
     const webcamEl = document.getElementById('webcam');
     const screenEl = document.getElementById('screen');
@@ -216,68 +415,246 @@
     const camDot = document.getElementById('camDot');
     const screenDot = document.getElementById('screenDot');
 
-    function attachVideo(el, placeholder, dot) {
-      el.style.display = 'block';
-      placeholder.style.display = 'none';
-      dot.classList.add('live');
-    }
-
-    // Called when a remote track (from client.py) is subscribed
-    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
-      console.log('Track subscribed:', track.kind, track.source, track.name);
-
-      if (track.kind === 'video') {
-        // Screen share has source === 'screen_share'; webcam has source === 'camera'
-        if (track.source === 'screen_share' || track.name === 'screen') {
-          track.attach(screenEl);
-          attachVideo(screenEl, screenPlaceholder, screenDot);
-        } else {
-          track.attach(webcamEl);
-          attachVideo(webcamEl, camPlaceholder, camDot);
-        }
-      } else if (track.kind === 'audio') {
-        // Attach audio to a hidden element (created by LiveKit)
-        const el = track.attach();
-        el.style.display = 'none';
-        document.body.appendChild(el);
-        updateAudioUI(true);
-      }
-    });
-
-    room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
-      console.log('Track unsubscribed:', track.kind, track.source);
-      track.detach();
-      if (track.kind === 'video') {
-        if (track.source === 'screen_share' || track.name === 'screen') {
-          screenEl.srcObject = null;
-          screenEl.style.display = 'none';
-          screenPlaceholder.style.display = 'grid';
-          screenDot.classList.remove('live');
-        } else {
-          webcamEl.srcObject = null;
-          webcamEl.style.display = 'none';
-          camPlaceholder.style.display = 'grid';
-          camDot.classList.remove('live');
-        }
-      } else if (track.kind === 'audio') {
-        updateAudioUI(false);
-      }
-    });
-
-    room.on(LivekitClient.RoomEvent.Disconnected, () => {
-      setDisconnected('Disconnected');
-    });
-
-    // ─────────── Audio UI + level meter ───────────
     const audioStatusEl = document.getElementById('audioStatus');
     const audioIndicator = document.getElementById('audioIndicator');
     const levelMeter = document.getElementById('levelMeter');
     const meterBars = levelMeter.querySelectorAll('span');
 
-    // LiveKit doesn't expose an AnalyserNode directly, so we build our own
-    // analyser by creating a MediaStream from the subscribed audio track.
+    let room = null;
+    let currentRoomName = null;
+    let allStudents = [];
     let analyserCtx = null;
-    let analyser = null;
+
+    function setConnected(msg) {
+      connDot.classList.add('live'); connDot.classList.remove('offline');
+      connText.textContent = msg || 'Connected';
+    }
+    function setDisconnected(msg) {
+      connDot.classList.remove('live'); connDot.classList.add('offline');
+      connText.textContent = msg || 'Disconnected';
+    }
+
+    // ─── Page 1 ───
+    function shortName(roomName) {
+      return roomName.replace(/^student-/, '');
+    }
+
+    function initials(name) {
+      const host = name.replace(/-[0-9a-f]{6}$/, '');
+      const parts = host.split(/[-_ ]+/).filter(Boolean);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return host.slice(0, 2).toUpperCase();
+    }
+
+    function renderStudents(students) {
+      const filter = (searchInput.value || '').trim().toLowerCase();
+      students.sort((a, b) => a.name.localeCompare(b.name));
+      const filtered = filter
+        ? students.filter(s => shortName(s.name).toLowerCase().includes(filter))
+        : students;
+
+      if (filtered.length === 0) {
+        if (students.length === 0) {
+          studentsGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <h3>No students online</h3>
+              <p>Student clients will appear here as soon as they connect</p>
+            </div>`;
+        } else {
+          studentsGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <h3>No matches</h3>
+              <p>Try a different search term</p>
+            </div>`;
+        }
+        return;
+      }
+
+      studentsGrid.innerHTML = '';
+      for (const r of filtered) {
+        const label = shortName(r.name);
+        const card = document.createElement('div');
+        card.className = 'student-card';
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-avatar">${initials(label)}</div>
+            <div class="card-info">
+              <div class="card-name">${label}</div>
+              <div class="card-room">${r.name}</div>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <div class="card-status"><span class="dot live"></span>Live</div>
+            <div class="card-participants">${r.num_participants} in room</div>
+          </div>
+          <div class="card-cta">
+            Watch stream
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>`;
+        card.onclick = () => openView(r.name);
+        studentsGrid.appendChild(card);
+      }
+    }
+
+    async function refreshRooms() {
+      try {
+        const resp = await fetch('/rooms');
+        const data = await resp.json();
+        const rooms = data.rooms || [];
+        allStudents = rooms.filter(r => r.name && r.name.startsWith('student-'));
+        renderStudents(allStudents);
+      } catch (e) {
+        console.warn('Room list fetch failed:', e);
+      }
+    }
+
+    searchInput.addEventListener('input', () => renderStudents(allStudents));
+    refreshBtn.addEventListener('click', () => {
+      refreshBtn.style.transform = 'rotate(360deg)';
+      refreshBtn.style.transition = 'transform 0.5s';
+      setTimeout(() => refreshBtn.style.transform = '', 500);
+      refreshRooms();
+    });
+
+    setInterval(() => {
+      if (pageList.classList.contains('active')) refreshRooms();
+    }, 3000);
+
+    // ─── Page switching ───
+    function showList() {
+      document.body.classList.remove('viewing');
+      pageView.classList.remove('active');
+      pageList.classList.add('active');
+      document.title = 'Proctoring Dashboard';
+    }
+    function showView() {
+      document.body.classList.add('viewing');
+      pageList.classList.remove('active');
+      pageView.classList.add('active');
+    }
+
+    backBtn.addEventListener('click', async () => {
+      if (room) {
+        try { room.removeAllListeners(); await room.disconnect(); } catch (_) {}
+        room = null;
+      }
+      currentRoomName = null;
+      resetVideoUI();
+      showList();
+      refreshRooms();
+    });
+
+    // ─── Page 2 ───
+    function resetVideoUI(msg) {
+      webcamEl.srcObject = null;
+      webcamEl.style.display = 'none';
+      screenEl.srcObject = null;
+      screenEl.style.display = 'none';
+
+      screenPlaceholder.style.display = 'grid';
+      camPlaceholder.style.display = 'grid';
+
+      screenPlaceholder.textContent = msg || 'Connecting to student…';
+      camPlaceholder.textContent = msg || 'No camera';
+
+      camDot.classList.remove('live');
+      screenDot.classList.remove('live');
+      updateAudioUI(false);
+    }
+
+    async function openView(roomName) {
+      // Click IS the user gesture — resume audio context here
+      try {
+        if (!analyserCtx) {
+          analyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (analyserCtx.state === 'suspended') {
+          await analyserCtx.resume();
+        }
+      } catch (e) {
+        console.warn('Audio ctx resume failed:', e);
+      }
+
+      showView();
+      viewName.textContent = shortName(roomName);
+      document.title = 'Watching ' + shortName(roomName);
+      setDisconnected('Connecting…');
+      resetVideoUI('Connecting…');
+
+      if (room) {
+        try { room.removeAllListeners(); await room.disconnect(); } catch (_) {}
+        room = null;
+      }
+      currentRoomName = roomName;
+
+      try {
+        const resp = await fetch('/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: MY_IDENTITY, room: roomName }),
+        });
+        if (!resp.ok) throw new Error('Token fetch failed: ' + resp.status);
+        const { token, url } = await resp.json();
+
+        room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+
+        room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+          if (track.kind === 'video') {
+            if (track.source === 'screen_share' || track.name === 'screen') {
+              track.attach(screenEl);
+              screenEl.style.display = 'block';
+              screenPlaceholder.style.display = 'none';
+              screenDot.classList.add('live');
+            } else {
+              track.attach(webcamEl);
+              webcamEl.style.display = 'block';
+              camPlaceholder.style.display = 'none';
+              camDot.classList.add('live');
+            }
+          } else if (track.kind === 'audio') {
+            const el = track.attach();
+            el.style.display = 'none';
+            document.body.appendChild(el);
+            updateAudioUI(true);
+            if (track.mediaStreamTrack) startMeter(track.mediaStreamTrack);
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+          track.detach();
+          if (track.kind === 'video') {
+            if (track.source === 'screen_share' || track.name === 'screen') {
+              screenEl.srcObject = null;
+              screenEl.style.display = 'none';
+              screenPlaceholder.style.display = 'grid';
+              screenPlaceholder.textContent = 'Waiting for screen…';
+              screenDot.classList.remove('live');
+            } else {
+              webcamEl.srcObject = null;
+              webcamEl.style.display = 'none';
+              camPlaceholder.style.display = 'grid';
+              camPlaceholder.textContent = 'No camera';
+              camDot.classList.remove('live');
+            }
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.Disconnected, () => {
+          if (currentRoomName === roomName) setDisconnected('Student disconnected');
+        });
+
+        await room.connect(url, token);
+        try { await room.startAudio(); } catch (e) { console.warn('startAudio:', e); }
+        setConnected('Watching: ' + shortName(roomName));
+      } catch (e) {
+        console.error('Connect failed:', e);
+        setDisconnected('Connection failed');
+        screenPlaceholder.textContent = 'Connection failed';
+        camPlaceholder.textContent = 'Connection failed';
+      }
+    }
 
     function startMeter(mediaStreamTrack) {
       try {
@@ -286,7 +663,7 @@
         }
         const stream = new MediaStream([mediaStreamTrack]);
         const src = analyserCtx.createMediaStreamSource(stream);
-        analyser = analyserCtx.createAnalyser();
+        const analyser = analyserCtx.createAnalyser();
         analyser.fftSize = 256;
         src.connect(analyser);
 
@@ -300,7 +677,7 @@
               sum += v * v;
             }
             const rms = Math.sqrt(sum / tmp.length);
-            const db  = 20 * Math.log10(rms + 1e-6);
+            const db = 20 * Math.log10(rms + 1e-6);
             const active = Math.max(0, Math.min(meterBars.length,
               Math.round(((db + 60) / 60) * meterBars.length)));
             meterBars.forEach((b, idx) => {
@@ -316,13 +693,6 @@
       }
     }
 
-    // Also start meter on audio subscriptions specifically
-    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
-      if (track.kind === 'audio' && track.mediaStreamTrack) {
-        startMeter(track.mediaStreamTrack);
-      }
-    });
-
     function updateAudioUI(live) {
       if (live) {
         audioStatusEl.textContent = 'Audio: live';
@@ -330,62 +700,58 @@
         audioIndicator.classList.add('live');
         levelMeter.classList.add('active');
       } else {
-        audioStatusEl.textContent = 'Audio: waiting';
+        audioStatusEl.textContent = 'Audio: ready';
         audioIndicator.classList.remove('live');
         audioIndicator.classList.remove('blocked');
         levelMeter.classList.remove('active');
       }
     }
 
-    // ─────────── Full-screen click-to-start audio gate ───────────
-    const gate = document.createElement('div');
-    gate.id = 'audioGate';
-    gate.innerHTML = '🔊 Click anywhere to start';
-    Object.assign(gate.style, {
-      position: 'fixed', inset: '0', zIndex: 9999,
-      background: 'rgba(5, 8, 14, 0.92)',
-      display: 'grid', placeItems: 'center',
-      color: '#e6edf5', cursor: 'pointer',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontSize: '1.15rem', letterSpacing: '0.02em',
-      backdropFilter: 'blur(6px)',
-    });
-    document.body.appendChild(gate);
+    // ─── Draggable PiP ───
+    (function makeDraggable() {
+      const stage = document.querySelector('.stage');
+      const pip = document.getElementById('pip');
+      let dragging = false;
+      let offsetX = 0, offsetY = 0;
 
-    async function unlockAudio() {
-      try {
-        await room.startAudio();
-        gate.remove();
-      } catch (e) {
-        // Not fatal; user can click again later
-        console.warn('startAudio failed:', e);
+      function startDrag(e) {
+        dragging = true;
+        pip.classList.add('dragging');
+        const rect = pip.getBoundingClientRect();
+        const pt = e.touches ? e.touches[0] : e;
+        offsetX = pt.clientX - rect.left;
+        offsetY = pt.clientY - rect.top;
+        e.preventDefault();
       }
-    }
-
-    ['click','touchstart','pointerdown','keydown'].forEach(e =>
-      window.addEventListener(e, unlockAudio, { passive: true }));
-
-    // ─────────── Connect to LiveKit ───────────
-    async function connect() {
-      try {
-        const resp = await fetch('/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identity: 'viewer' }),
-        });
-        if (!resp.ok) throw new Error('Token fetch failed: ' + resp.status);
-        const { token, url } = await resp.json();
-
-        await room.connect(url, token);
-        setConnected();
-        console.log('Connected to LiveKit room:', room.name);
-      } catch (e) {
-        console.error('Connect failed:', e);
-        setDisconnected('Connection error');
+      function onMove(e) {
+        if (!dragging) return;
+        const pt = e.touches ? e.touches[0] : e;
+        const sRect = stage.getBoundingClientRect();
+        const pRect = pip.getBoundingClientRect();
+        let x = pt.clientX - sRect.left - offsetX;
+        let y = pt.clientY - sRect.top - offsetY;
+        x = Math.max(8, Math.min(x, sRect.width - pRect.width - 8));
+        y = Math.max(8, Math.min(y, sRect.height - pRect.height - 8));
+        pip.style.left = x + 'px';
+        pip.style.top = y + 'px';
+        pip.style.right = 'auto';
+        pip.style.bottom = 'auto';
       }
-    }
+      function stopDrag() {
+        dragging = false;
+        pip.classList.remove('dragging');
+      }
 
-    connect();
+      pip.addEventListener('mousedown', startDrag);
+      pip.addEventListener('touchstart', startDrag, { passive: true });
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', stopDrag);
+      window.addEventListener('touchend', stopDrag);
+    })();
+
+    // ─── Boot ───
+    refreshRooms();
   </script>
 
 </body>
