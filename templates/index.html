@@ -51,12 +51,7 @@
     .brand h1 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
     .brand small { display: block; color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 
-    /* ─── Header right side: hidden on page 1, shown on page 2 ─── */
-    .header-tools {
-      display: none;
-      gap: 0.6rem;
-      align-items: center;
-    }
+    .header-tools { display: none; gap: 0.6rem; align-items: center; }
     body.viewing .header-tools { display: flex; }
 
     .status-pill {
@@ -104,7 +99,6 @@
       display: flex; align-items: center; gap: 0.75rem;
       margin-bottom: 1.5rem; flex-wrap: wrap;
     }
-
     .search-wrap { position: relative; flex: 1; min-width: 220px; }
     .search-wrap svg {
       position: absolute; left: 0.85rem; top: 50%;
@@ -134,7 +128,7 @@
 
     .students-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1rem;
     }
 
@@ -146,7 +140,7 @@
       cursor: pointer;
       transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
       box-shadow: var(--shadow);
-      display: flex; flex-direction: column; gap: 0.85rem;
+      display: flex; flex-direction: column; gap: 0.9rem;
       position: relative; overflow: hidden;
     }
     .student-card::before {
@@ -161,9 +155,9 @@
     }
     .student-card:hover::before { opacity: 1; }
 
-    .card-top { display: flex; align-items: flex-start; gap: 0.85rem; }
+    .card-top { display: flex; align-items: center; gap: 0.9rem; }
     .card-avatar {
-      width: 44px; height: 44px; border-radius: 12px;
+      width: 46px; height: 46px; border-radius: 12px;
       background: linear-gradient(135deg, var(--accent), #7c5cff);
       display: grid; place-items: center;
       font-weight: 700; font-size: 1rem;
@@ -172,40 +166,30 @@
     }
     .card-info { min-width: 0; flex: 1; }
     .card-name {
-      font-weight: 600; font-size: 0.95rem;
-      margin-bottom: 0.15rem;
+      font-weight: 600; font-size: 0.98rem;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .card-room {
-      font-family: ui-monospace, monospace;
-      font-size: 0.72rem; color: var(--text-dim);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-
-    .card-bottom { display: flex; align-items: center; justify-content: space-between; }
     .card-status {
-      display: flex; align-items: center; gap: 0.4rem;
-      font-size: 0.75rem; color: var(--success); font-weight: 500;
-    }
-    .card-status .dot { width: 7px; height: 7px; }
-    .card-participants {
-      font-size: 0.75rem; color: var(--text-dim);
-      background: var(--surface-2);
-      padding: 2px 9px; border-radius: 999px;
-    }
-    .card-cta {
-      display: flex; align-items: center; gap: 0.35rem;
-      font-size: 0.8rem; color: var(--accent); font-weight: 500;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.74rem; color: var(--success); font-weight: 500;
       margin-top: 0.15rem;
     }
-    .card-cta svg { width: 13px; height: 13px; }
+    .card-status .dot { width: 7px; height: 7px; }
+
+    .card-cta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.82rem; color: var(--accent); font-weight: 500;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border);
+    }
+    .card-cta svg { width: 14px; height: 14px; }
 
     .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-dim); }
     .empty-state svg { width: 56px; height: 56px; margin-bottom: 1rem; opacity: 0.4; }
     .empty-state h3 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--text); }
     .empty-state p { margin: 0; font-size: 0.88rem; }
 
-    /* ─── Page 2: live view ─── */
+    /* ─── Page 2: live view (webcam LEFT, screen RIGHT) ─── */
     .view-page { padding: 1rem 1.5rem 1.5rem; }
     .view-toolbar {
       display: flex; align-items: center; justify-content: space-between;
@@ -233,80 +217,67 @@
       max-width: 40ch;
     }
 
-    .stage {
-      position: relative;
+    /* Grid: webcam small LEFT, screen big RIGHT */
+    .stream-grid {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 1rem;
       height: calc(100vh - 210px);
-      min-height: 380px;
+      min-height: 400px;
+    }
+
+    .panel {
+      position: relative;
       background: #05080e;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
     }
-    .stage .screen-video {
-      width: 100%; height: 100%;
-      object-fit: contain; background: #05080e; display: block;
-    }
-    .stage .placeholder {
-      position: absolute; inset: 0;
-      display: grid; place-items: center;
-      color: var(--text-dim); font-size: 0.95rem;
-      text-align: center; padding: 1rem;
-    }
-    .stage .badge {
+
+    .panel .panel-label {
       position: absolute; top: 0.75rem; left: 0.75rem;
       padding: 0.3rem 0.7rem; background: rgba(0,0,0,0.65);
       backdrop-filter: blur(6px); border-radius: 8px;
       font-size: 0.72rem; font-weight: 500; letter-spacing: 0.03em;
       text-transform: uppercase; color: var(--text-dim);
       display: flex; align-items: center; gap: 0.4rem;
-      pointer-events: none;
+      z-index: 2; pointer-events: none;
     }
-    .stage .badge .dot { width: 6px; height: 6px; }
+    .panel .panel-label .dot { width: 6px; height: 6px; }
 
-    .pip {
-      position: absolute;
-      right: 1rem; bottom: 1rem;
-      width: 240px; aspect-ratio: 4 / 3;
-      background: #000;
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      cursor: grab;
-      transition: box-shadow 0.15s, border-color 0.15s;
-      user-select: none;
-    }
-    .pip:hover { border-color: var(--accent); }
-    .pip.dragging { cursor: grabbing; box-shadow: 0 12px 32px rgba(0,0,0,0.7); }
-    .pip video {
+    .panel video {
       width: 100%; height: 100%;
-      object-fit: cover; display: block;
-      background: #000; pointer-events: none;
+      object-fit: contain;
+      background: #05080e;
+      display: block;
+      flex: 1;
     }
-    .pip .pip-placeholder {
+
+    /* Webcam panel: crop to fill the narrow column */
+    .panel.panel-cam video {
+      object-fit: cover;
+    }
+
+    .panel .placeholder {
       position: absolute; inset: 0;
       display: grid; place-items: center;
-      color: var(--text-dim); font-size: 0.72rem;
-      text-align: center; padding: 0.5rem;
+      color: var(--text-dim); font-size: 0.9rem;
+      text-align: center; padding: 1rem;
+      z-index: 1;
     }
-    .pip .pip-badge {
-      position: absolute; top: 0.4rem; left: 0.4rem;
-      padding: 0.2rem 0.5rem; background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(6px); border-radius: 6px;
-      font-size: 0.62rem; font-weight: 500;
-      text-transform: uppercase; letter-spacing: 0.03em;
-      color: var(--text-dim);
-      display: flex; align-items: center; gap: 0.35rem;
-      pointer-events: none;
-    }
-    .pip .pip-badge .dot { width: 6px; height: 6px; }
 
-    @media (max-width: 700px) {
-      .pip { width: 140px; right: 0.6rem; bottom: 0.6rem; }
-      .stage { height: calc(100vh - 230px); }
-      .list-hero h1 { font-size: 1.5rem; }
+    @media (max-width: 900px) {
+      .stream-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 220px minmax(0, 1fr);
+        height: auto;
+      }
+      .panel { aspect-ratio: 16 / 9; }
+      .panel.panel-cam { aspect-ratio: auto; height: 220px; }
       .view-page { padding: 0.75rem; }
+      .list-hero h1 { font-size: 1.5rem; }
     }
   </style>
 </head>
@@ -320,8 +291,6 @@
         <small>Live monitoring console</small>
       </div>
     </div>
-
-    <!-- Hidden on page 1, shown on page 2 via body.viewing -->
     <div class="header-tools">
       <div class="audio-indicator" id="audioIndicator">
         <div class="level-meter" id="levelMeter">
@@ -336,7 +305,7 @@
     </div>
   </header>
 
-  <!-- ─── Page 1: student list ─── -->
+  <!-- Page 1 -->
   <div class="page active" id="pageList">
     <div class="list-page">
       <div class="list-hero">
@@ -365,7 +334,7 @@
     </div>
   </div>
 
-  <!-- ─── Page 2: live view ─── -->
+  <!-- Page 2 -->
   <div class="page" id="pageView">
     <div class="view-page">
       <div class="view-toolbar">
@@ -379,15 +348,19 @@
         </div>
       </div>
 
-      <div class="stage">
-        <span class="badge"><span class="dot" id="screenDot"></span>Screen</span>
-        <div class="placeholder" id="screenPlaceholder">Connecting to student…</div>
-        <video id="screen" class="screen-video" autoplay playsinline muted style="display:none;"></video>
-
-        <div class="pip" id="pip">
-          <span class="pip-badge"><span class="dot" id="camDot"></span>Camera</span>
-          <div class="pip-placeholder" id="camPlaceholder">No camera</div>
+      <div class="stream-grid">
+        <!-- Webcam: small, LEFT -->
+        <div class="panel panel-cam">
+          <span class="panel-label"><span class="dot" id="camDot"></span>Camera</span>
+          <div class="placeholder" id="camPlaceholder">No camera</div>
           <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+        </div>
+
+        <!-- Screen: big, RIGHT -->
+        <div class="panel panel-screen">
+          <span class="panel-label"><span class="dot" id="screenDot"></span>Screen</span>
+          <div class="placeholder" id="screenPlaceholder">Connecting to student…</div>
+          <video id="screen" autoplay playsinline muted style="display:none;"></video>
         </div>
       </div>
     </div>
@@ -482,15 +455,11 @@
             <div class="card-avatar">${initials(label)}</div>
             <div class="card-info">
               <div class="card-name">${label}</div>
-              <div class="card-room">${r.name}</div>
+              <div class="card-status"><span class="dot live"></span>Live</div>
             </div>
           </div>
-          <div class="card-bottom">
-            <div class="card-status"><span class="dot live"></span>Live</div>
-            <div class="card-participants">${r.num_participants} in room</div>
-          </div>
           <div class="card-cta">
-            Watch stream
+            <span>Watch stream</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </div>`;
         card.onclick = () => openView(r.name);
@@ -565,7 +534,6 @@
     }
 
     async function openView(roomName) {
-      // Click IS the user gesture — resume audio context here
       try {
         if (!analyserCtx) {
           analyserCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -598,7 +566,7 @@
         if (!resp.ok) throw new Error('Token fetch failed: ' + resp.status);
         const { token, url } = await resp.json();
 
-        room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+        room = new LivekitClient.Room({ adaptiveStream: false, dynacast: false });
 
         room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
           if (track.kind === 'video') {
@@ -706,49 +674,6 @@
         levelMeter.classList.remove('active');
       }
     }
-
-    // ─── Draggable PiP ───
-    (function makeDraggable() {
-      const stage = document.querySelector('.stage');
-      const pip = document.getElementById('pip');
-      let dragging = false;
-      let offsetX = 0, offsetY = 0;
-
-      function startDrag(e) {
-        dragging = true;
-        pip.classList.add('dragging');
-        const rect = pip.getBoundingClientRect();
-        const pt = e.touches ? e.touches[0] : e;
-        offsetX = pt.clientX - rect.left;
-        offsetY = pt.clientY - rect.top;
-        e.preventDefault();
-      }
-      function onMove(e) {
-        if (!dragging) return;
-        const pt = e.touches ? e.touches[0] : e;
-        const sRect = stage.getBoundingClientRect();
-        const pRect = pip.getBoundingClientRect();
-        let x = pt.clientX - sRect.left - offsetX;
-        let y = pt.clientY - sRect.top - offsetY;
-        x = Math.max(8, Math.min(x, sRect.width - pRect.width - 8));
-        y = Math.max(8, Math.min(y, sRect.height - pRect.height - 8));
-        pip.style.left = x + 'px';
-        pip.style.top = y + 'px';
-        pip.style.right = 'auto';
-        pip.style.bottom = 'auto';
-      }
-      function stopDrag() {
-        dragging = false;
-        pip.classList.remove('dragging');
-      }
-
-      pip.addEventListener('mousedown', startDrag);
-      pip.addEventListener('touchstart', startDrag, { passive: true });
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('mouseup', stopDrag);
-      window.addEventListener('touchend', stopDrag);
-    })();
 
     // ─── Boot ───
     refreshRooms();
