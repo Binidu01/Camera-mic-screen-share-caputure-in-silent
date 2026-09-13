@@ -1,6 +1,9 @@
 import os
-import datetime
 import asyncio
+import threading
+import traceback
+import datetime
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from livekit import api
@@ -8,17 +11,18 @@ from livekit import api
 app = Flask(__name__)
 CORS(app)
 
+# ─────────────── CONFIG ───────────────
 LIVEKIT_API_KEY    = os.environ["LIVEKIT_API_KEY"]
 LIVEKIT_API_SECRET = os.environ["LIVEKIT_API_SECRET"]
 LIVEKIT_URL        = os.environ["LIVEKIT_URL"]
 
-# LiveKit HTTP API URL (https:// instead of wss://) for server-side queries
+# The admin HTTP API needs https://, not wss://
 LIVEKIT_HTTP_URL = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://')
 
-# Default room name — only used if the client doesn't supply one
 DEFAULT_ROOM = "proctor-room"
 
 
+# ─────────────── PAGES ───────────────
 @app.route('/')
 def index():
     """Serve the viewer HTML from templates/index.html."""
@@ -30,6 +34,7 @@ def healthz():
     return "ok", 200
 
 
+# ─────────────── TOKEN ───────────────
 @app.route('/token', methods=['POST'])
 def get_token():
     """
@@ -58,43 +63,62 @@ def get_token():
     return jsonify({'token': token, 'url': LIVEKIT_URL})
 
 
+# ─────────────── ROOMS ───────────────
+async def _fetch_rooms_async():
+    """Async helper — creates its own LiveKitAPI client."""
+    client = api.LiveKitAPI(
+        url=LIVEKIT_HTTP_URL,
+        api_key=LIVEKIT_API_KEY,
+        api_secret=LIVEKIT_API_SECRET,
+    )
+    try:
+        resp = await client.room.list_rooms(api.ListRoomsRequest())
+        return resp.rooms
+    finally:
+        await client.aclose()
+
+
 @app.route('/rooms', methods=['GET'])
 def list_rooms():
     """
-    Return the list of currently-active LiveKit rooms.
-    Only rooms with at least one participant are returned by default.
+    Return active LiveKit rooms.
+    The LiveKit Python SDK is async-only, but Flask under gunicorn/gevent
+    has no running event loop. We spin up a fresh event loop in a
+    dedicated thread, run the async call there, and join it back.
     """
-    try:
-        client = api.LiveKitAPI(
-            url=LIVEKIT_HTTP_URL,
-            api_key=LIVEKIT_API_KEY,
-            api_secret=LIVEKIT_API_SECRET,
-        )
+    result = {}
 
-        async def _fetch():
-            try:
-                resp = await client.room.list_rooms(api.ListRoomsRequest())
-                return resp.rooms
-            finally:
-                await client.aclose()
+    def run_in_thread():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result['data'] = loop.run_until_complete(_fetch_rooms_async())
+        except Exception as e:
+            result['error'] = str(e)
+            print("[rooms] exception in thread:")
+            traceback.print_exc()
+        finally:
+            loop.close()
 
-        rooms = asyncio.run(_fetch())
+    thread = threading.Thread(target=run_in_thread)
+    thread.start()
+    thread.join(timeout=15)   # never hang a request forever
 
-        result = []
-        for r in rooms:
-            result.append({
-                'name': r.name,
-                'num_participants': r.num_participants,
-                'creation_time': r.creation_time,
-            })
+    if 'error' in result:
+        return jsonify({'rooms': [], 'error': result['error']}), 500
 
-        return jsonify({'rooms': result})
+    rooms_raw = result.get('data', [])
+    rooms = [{
+        'name': r.name,
+        'num_participants': r.num_participants,
+        'creation_time': r.creation_time,
+    } for r in rooms_raw]
 
-    except Exception as e:
-        print("list_rooms failed:", e)
-        return jsonify({'rooms': [], 'error': str(e)}), 500
+    return jsonify({'rooms': rooms})
 
 
+# ─────────────── MAIN ───────────────
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
+    print(f"LiveKit HTTP URL: {LIVEKIT_HTTP_URL}")
     app.run(host='0.0.0.0', port=port)
