@@ -189,7 +189,7 @@
     .empty-state h3 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--text); }
     .empty-state p { margin: 0; font-size: 0.88rem; }
 
-    /* ─── Page 2: live view (webcam LEFT, screen RIGHT) ─── */
+    /* ─── Page 2: live view ─── */
     .view-page { padding: 1rem 1.5rem 1.5rem; }
     .view-toolbar {
       display: flex; align-items: center; justify-content: space-between;
@@ -217,10 +217,10 @@
       max-width: 40ch;
     }
 
-    /* Grid: webcam small LEFT, screen big RIGHT */
+    /* Grid: webcam square on the left, screen big on the right */
     .stream-grid {
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
+      grid-template-columns: 360px minmax(0, 1fr);
       gap: 1rem;
       height: calc(100vh - 210px);
       min-height: 400px;
@@ -255,7 +255,12 @@
       flex: 1;
     }
 
-    /* Webcam panel: crop to fill the narrow column */
+    /* Webcam panel: perfect square, vertically centered */
+    .panel.panel-cam {
+      aspect-ratio: 1 / 1;
+      height: 360px;
+      align-self: center;
+    }
     .panel.panel-cam video {
       object-fit: cover;
     }
@@ -271,11 +276,16 @@
     @media (max-width: 900px) {
       .stream-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: 220px minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
         height: auto;
       }
       .panel { aspect-ratio: 16 / 9; }
-      .panel.panel-cam { aspect-ratio: auto; height: 220px; }
+      .panel.panel-cam {
+        aspect-ratio: 1 / 1;
+        height: 260px;
+        width: 260px;
+        margin: 0 auto;
+      }
       .view-page { padding: 0.75rem; }
       .list-hero h1 { font-size: 1.5rem; }
     }
@@ -349,7 +359,7 @@
       </div>
 
       <div class="stream-grid">
-        <!-- Webcam: small, LEFT -->
+        <!-- Webcam: square, LEFT -->
         <div class="panel panel-cam">
           <span class="panel-label"><span class="dot" id="camDot"></span>Camera</span>
           <div class="placeholder" id="camPlaceholder">No camera</div>
