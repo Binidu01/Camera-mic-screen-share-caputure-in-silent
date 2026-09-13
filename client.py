@@ -1,9 +1,14 @@
 import asyncio
+import os
+import platform
 import queue
+import re
 import signal
+import socket
 import sys
 import threading
 import time
+import uuid
 
 import cv2
 import mss
@@ -16,6 +21,41 @@ from livekit import rtc
 TOKEN_URL = 'https://camera-mic-screen-share-caputure-in.onrender.com/token'
 DEBUG_TIMING = False   # set True to re-enable per-frame timing logs
 
+
+# ─────────────────────────────────────────────────────────────
+#  STUDENT IDENTITY  —  derived from the PC itself
+# ─────────────────────────────────────────────────────────────
+def make_student_id():
+    """
+    Build a stable, DNS-safe ID from the machine.
+    Format: <hostname>-<short-hash>
+    Example: DESKTOP-A1B2C3-4f9a2c
+    """
+    try:
+        hostname = socket.gethostname()
+    except Exception:
+        hostname = platform.node() or 'unknown'
+
+    # Strip anything that isn't a letter, digit, or dash
+    hostname = re.sub(r'[^A-Za-z0-9-]', '-', hostname).strip('-')
+    if not hostname:
+        hostname = 'pc'
+
+    # Short hash of hostname + MAC for uniqueness across duplicate hostnames
+    try:
+        mac = uuid.getnode()
+    except Exception:
+        mac = 0
+    h = format(abs(hash(f"{hostname}-{mac}")) % (16**6), '06x')
+
+    return f"{hostname}-{h}"
+
+
+# Allow override via env var (e.g. STUDENT_NAME=Alice python client.py)
+STUDENT_ID = os.environ.get('STUDENT_NAME') or make_student_id()
+ROOM_NAME  = f"student-{STUDENT_ID}"
+IDENTITY   = f"publisher-{STUDENT_ID}"
+
 # Global shutdown flag
 STOP = threading.Event()
 
@@ -23,6 +63,7 @@ STOP = threading.Event()
 _cap = None
 _audio_stream = None
 _room = None
+_loop = None
 
 
 def log(msg):
@@ -33,11 +74,11 @@ def log(msg):
 # ─────────────────────────────────────────────────────────────
 #  TOKEN
 # ─────────────────────────────────────────────────────────────
-def get_livekit_credentials(identity):
+def get_livekit_credentials(identity, room):
     """Fetch a LiveKit JWT + URL from the Render token server."""
     resp = requests.post(
         TOKEN_URL,
-        json={'identity': identity},
+        json={'identity': identity, 'room': room},
         timeout=30,
     )
     resp.raise_for_status()
@@ -288,9 +329,8 @@ def shutdown(signum=None, frame=None):
     print("\nShutting down…")
     STOP.set()
 
-    # Disconnect room
     try:
-        if _room is not None and _room.is_connected:
+        if _room is not None and _room.is_connected and _loop is not None:
             asyncio.run_coroutine_threadsafe(_room.disconnect(), _loop)
             print("LiveKit disconnect requested")
     except Exception:
@@ -308,13 +348,10 @@ def install_signal_handlers():
 # ─────────────────────────────────────────────────────────────
 #  MAIN
 # ─────────────────────────────────────────────────────────────
-_loop = None   # set in main() so shutdown() can schedule disconnect
-
-
 async def run_publisher():
     global _room
 
-    creds = get_livekit_credentials('publisher')
+    creds = get_livekit_credentials(IDENTITY, ROOM_NAME)
     print(f"Got token, connecting to {creds['url']}")
 
     room = rtc.Room()
@@ -344,6 +381,10 @@ def main():
     install_signal_handlers()
 
     print("Starting LiveKit publisher…")
+    print(f"Student ID : {STUDENT_ID}")
+    print(f"Room       : {ROOM_NAME}")
+    print(f"Identity   : {IDENTITY}")
+
     _loop = asyncio.new_event_loop()
     asyncio.set_event_loop(_loop)
 
